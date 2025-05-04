@@ -1,5 +1,12 @@
 // src/viewModels/useApplicationViewModel.ts
+import { create } from 'zustand';
 import { ApplicationModel, ApplicationStatus } from '../domain/models/ApplicationModel';
+import {
+  createDocument,
+  getDocument,
+  queryDocuments,
+  updateDocument
+} from '../services/firebase/firestore';
 
 interface ApplicationState {
   applications: ApplicationModel[];
@@ -99,7 +106,7 @@ export const useApplicationViewModel = create<ApplicationState>((set, get) => ({
     try {
       const application = await createDocument<ApplicationModel>('applications', {
         ...data,
-        status: 'pending', // Toujours commencer avec le statut "pending"
+        status: 'pending', 
       });
       
       set(state => ({

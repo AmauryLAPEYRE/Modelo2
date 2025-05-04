@@ -1,7 +1,14 @@
 // app/(public)/register.tsx
-import React from 'react';
+import { useRouter } from 'expo-router';
+import { Formik } from 'formik';
+import React, { useState } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import * as Yup from 'yup';
 import { Card } from '../../src/components/ui';
+import { Button, Input } from '../../src/components/ui';
 import { UserRole } from '../../src/domain/models/UserModel';
+import { createThemedStyles, useTheme } from '../../src/utils/theme';
+import { useAuthViewModel } from '../../src/viewModels/useAuthViewModel'
 
 // Schéma de validation
 const RegisterSchema = Yup.object().shape({

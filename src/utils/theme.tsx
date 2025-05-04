@@ -1,5 +1,5 @@
 // src/utils/theme.ts
-import { createContext, ReactNode, useContext } from 'react';
+import React, { createContext, ReactNode, useContext } from 'react';
 import { StyleSheet } from 'react-native';
 
 // Définir les couleurs du thème

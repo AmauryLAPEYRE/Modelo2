@@ -1,5 +1,7 @@
 // src/components/ui/Card.tsx
 import React, { ReactNode } from 'react';
+import { TouchableOpacity, View, StyleProp, ViewStyle } from 'react-native';
+import { createThemedStyles, useTheme } from '../../utils/theme';
 
 interface CardProps {
   children: ReactNode;

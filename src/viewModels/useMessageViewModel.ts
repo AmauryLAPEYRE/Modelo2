@@ -1,6 +1,8 @@
 // src/viewModels/useMessageViewModel.ts
+import { create } from 'zustand';
 import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { ConversationModel, MessageModel } from '../domain/models/MessageModel';
+import { createDocument, getDocument, queryDocuments, updateDocument } from '../services/firebase/firestore';
 import { firestore } from '../services/firebase/config';
 
 interface MessageState {

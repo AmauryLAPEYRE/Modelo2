@@ -1,10 +1,16 @@
 // app/(auth)/services/[id].tsx
-import { useLocalSearchParams } from 'expo-router';
-import React from 'react';
-import { Alert, Dimensions, Image } from 'react-native';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Button, Dimensions, Image, ScrollView, StyleProp, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { ApplicationStatus } from '../../../src/domain/models/ApplicationModel';
+import { ApplicationModel } from '../../../src/domain/models/ApplicationModel';
 import { formatCurrency, formatDate } from '../../../src/utils/formatters';
+import { createThemedStyles, useTheme } from '../../../src/utils/theme';
 import { useApplicationViewModel } from '../../../src/viewModels/useApplicationViewModel';
+import { useAuthViewModel } from '../../../src/viewModels/useAuthViewModel';
+import { useServiceViewModel } from '../../../src/viewModels/useServiceViewModel';
+import { Card } from '../../../src/components/ui';
 
 export default function ServiceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

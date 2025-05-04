@@ -1,7 +1,35 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
+# Node modules
 node_modules/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS X
+.DS_Store
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.pbxuser
+!default.pbxuser
+*.xcworkspace
+!default.xcworkspace
+*.xccheckout
+*.plist
+ios/Pods/
+pods/
+
+# Android/IntelliJ
+*.iml
+.idea
+.gradle
+local.properties
+android/app/build/
+android/app/.cxx/
+android/app/.transform/
+android/app/src/main/res/drawable-*
 
 # Expo
 .expo/
@@ -9,29 +37,44 @@ dist/
 web-build/
 expo-env.d.ts
 
-# Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
+# Debug
+.vscode/
+chrome/
 
 # Metro
 .metro-health-check*
 
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
+# Firebase
+google-services.json
+GoogleService-Info.plist
 
-# macOS
-.DS_Store
-*.pem
+# Environment variables  
+.env
+.env.*
+!.env.example
 
-# local env files
-.env*.local
+# Editor folders and files
+.idea
+.vscode
+*.swp
+*.swo
+.tmp
 
-# typescript
-*.tsbuildinfo
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory
+coverage/
+*.lcov
+
+# Temporary files
+.tmp/
+tmp/
+
+# Other
+*.bak
+*.tgz
+*.zip

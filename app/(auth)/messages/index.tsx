@@ -2,11 +2,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { ConversationItem } from '../../../src/components/messages/ConversationItem';
 import { Card } from '../../../src/components/ui';
+import { createThemedStyles, useTheme } from '../../../src/utils/theme';
 import { useAuthViewModel } from '../../../src/viewModels/useAuthViewModel';
 import { useMessageViewModel } from '../../../src/viewModels/useMessageViewModel';
+import { ConversationModel } from '../../../src/domain/models/MessageModel';
 
 export default function MessagesScreen() {
   const router = useRouter();

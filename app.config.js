@@ -5,6 +5,7 @@ export default {
       slug: "modelo",
       version: "1.0.0",
       orientation: "portrait",
+      sdkVersion: "53.0.0",
       icon: "./assets/icon.png",
       splash: {
         image: "./assets/splash.png",

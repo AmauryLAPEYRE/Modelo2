@@ -1,8 +1,8 @@
 // app/(auth)/_layout.tsx
 import { FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { redirect, Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
-// import { useTheme } from '../../src/utils/theme';
+import { useTheme } from '../../src/utils/theme';
 import { useAuthViewModel } from '../../src/viewModels/useAuthViewModel';
 
 export default function TabLayout() {
@@ -11,8 +11,7 @@ export default function TabLayout() {
 
   // Si l'utilisateur n'est pas connecté, rediriger vers la page de connexion
   if (!currentUser) {
-    redirect('/(public)/login');
-    return null;
+    return <Redirect href="/(public)/login" />;
   }
 
   return (
@@ -92,7 +91,6 @@ export default function TabLayout() {
         name="services/create"
         options={{
           title: 'Créer une prestation',
-          // Hide this screen in the tab bar
           href: null,
         }}
       />
@@ -101,7 +99,6 @@ export default function TabLayout() {
         name="services/[id]"
         options={{
           title: 'Détails de la prestation',
-          // Hide this screen in the tab bar
           href: null,
         }}
       />
@@ -110,7 +107,6 @@ export default function TabLayout() {
         name="applications/[id]"
         options={{
           title: 'Détails de la candidature',
-          // Hide this screen in the tab bar
           href: null,
         }}
       />
@@ -119,7 +115,6 @@ export default function TabLayout() {
         name="messages/[id]"
         options={{
           title: 'Conversation',
-          // Hide this screen in the tab bar
           href: null,
         }}
       />
