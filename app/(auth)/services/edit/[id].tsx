@@ -1,17 +1,22 @@
-// app/(auth)/services/create.tsx
-import React, { useState } from 'react';
+// app/(auth)/services/edit/[id].tsx
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, SafeAreaView, Alert } from 'react-native';
-import { router } from 'expo-router';
-import { useServices } from '../../../src/hooks/useServices';
-import { useAuth } from '../../../src/hooks/useAuth';
-import { Button } from '../../../src/components/ui/Button';
-import { Input } from '../../../src/components/ui/Input';
-import { createThemedStyles, useTheme } from '../../../src/theme';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useServices } from '../../../../src/hooks/useServices';
+import { useAuth } from '../../../../src/hooks/useAuth';
+import { Button } from '../../../../src/components/ui/Button';
+import { Input } from '../../../../src/components/ui/Input';
+import { createThemedStyles, useTheme } from '../../../../src/theme';
+import { Service } from '../../../../src/types/models';
 
-export default function CreateServiceScreen() {
-  const { createService } = useServices();
+export default function EditServiceScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { getService, updateService } = useServices();
   const { user } = useAuth();
   const theme = useTheme();
+  const styles = useStyles();
+  
+  const [service, setService] = useState<Service | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
@@ -19,7 +24,26 @@ export default function CreateServiceScreen() {
   const [compensationType, setCompensationType] = useState<'free' | 'paid' | 'tfp'>('free');
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
-  const styles = useStyles();
+  const [fetchLoading, setFetchLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchService = async () => {
+      if (id) {
+        const serviceData = await getService(id);
+        if (serviceData) {
+          setService(serviceData);
+          setTitle(serviceData.title);
+          setDescription(serviceData.description);
+          setLocation(serviceData.location);
+          setDuration(serviceData.duration.toString());
+          setCompensationType(serviceData.compensation.type);
+          setAmount(serviceData.compensation.amount?.toString() || '');
+        }
+        setFetchLoading(false);
+      }
+    };
+    fetchService();
+  }, [id]);
 
   const handleSubmit = async () => {
     if (!title || !description || !location || !duration) {
@@ -27,28 +51,25 @@ export default function CreateServiceScreen() {
       return;
     }
 
-    if (!user || user.role !== 'professional') {
-      Alert.alert('Erreur', 'Seuls les professionnels peuvent créer des prestations');
+    if (!service || !user || user.role !== 'professional' || service.professionalId !== user.id) {
+      Alert.alert('Erreur', 'Vous n\'avez pas les droits pour modifier cette prestation');
       return;
     }
 
     setLoading(true);
     try {
-      await createService({
+      await updateService(service.id, {
         title,
         description,
-        professionalId: user.id,
-        date: new Date(),
+        location,
         duration: parseInt(duration),
         compensation: {
           type: compensationType,
           amount: compensationType === 'paid' ? parseInt(amount) : undefined,
         },
-        location,
-        status: 'published',
       });
 
-      Alert.alert('Succès', 'Prestation créée avec succès', [
+      Alert.alert('Succès', 'Prestation modifiée avec succès', [
         { text: 'OK', onPress: () => router.back() }
       ]);
     } catch (error) {
@@ -59,13 +80,33 @@ export default function CreateServiceScreen() {
     }
   };
 
+  if (fetchLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loading}>
+          <Text style={styles.loadingText}>Chargement...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!service) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.error}>
+          <Text style={styles.errorText}>Service non trouvé</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={styles.title}>Nouvelle prestation</Text>
-            <Text style={styles.subtitle}>Définissez les détails de votre service</Text>
+            <Text style={styles.title}>Modifier la prestation</Text>
+            <Text style={styles.subtitle}>Modifiez les détails de votre service</Text>
           </View>
 
           <View style={styles.form}>
@@ -132,12 +173,12 @@ export default function CreateServiceScreen() {
 
             <View style={styles.footer}>
               <Button
-                title="Créer la prestation"
+                title="Enregistrer les modifications"
                 onPress={handleSubmit}
                 loading={loading}
                 fullWidth
                 size="lg"
-                icon="add-circle"
+                icon="checkmark"
               />
               
               <Button
@@ -197,5 +238,21 @@ const useStyles = createThemedStyles((theme) => ({
   footer: {
     marginTop: theme.spacing.lg,
     gap: theme.spacing.sm,
+  },
+  loading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: theme.colors.textSecondary,
+  },
+  error: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: theme.colors.error,
   },
 }));

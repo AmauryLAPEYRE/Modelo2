@@ -1,6 +1,6 @@
 // src/components/ui/Input.tsx
 import React, { useState } from 'react';
-import { TextInput, View, Text, TouchableOpacity } from 'react-native';
+import { TextInput, View, Text, TouchableOpacity, TextStyle, ViewStyle } from 'react-native';
 import { createThemedStyles, useTheme } from '../../theme';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -47,16 +47,32 @@ export const Input = ({
 
   const togglePassword = () => setShowPassword(!showPassword);
 
+  // Combine styles correctly to avoid type errors
+  const getInputStyle = (): (TextStyle | undefined)[] => {
+    const styleArray: (TextStyle | undefined)[] = [styles.input];
+    
+    if (multiline) styleArray.push(styles.inputMultiline);
+    if (icon) styleArray.push(styles.inputWithIcon);
+    if (secureTextEntry || rightElement) styleArray.push(styles.inputWithRight);
+    
+    return styleArray;
+  };
+
+  const getWrapperStyle = (): (ViewStyle | undefined)[] => {
+    const styleArray: (ViewStyle | undefined)[] = [styles.inputWrapper];
+    
+    if (isFocused) styleArray.push(styles.inputWrapperFocused);
+    if (error) styleArray.push(styles.inputWrapperError);
+    if (disabled) styleArray.push(styles.inputWrapperDisabled);
+    
+    return styleArray;
+  };
+
   return (
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
       
-      <View style={[
-        styles.inputWrapper,
-        isFocused && styles.inputWrapperFocused,
-        error && styles.inputWrapperError,
-        disabled && styles.inputWrapperDisabled,
-      ]}>
+      <View style={getWrapperStyle()}>
         {icon && (
           <TouchableOpacity 
             onPress={onIcon} 
@@ -72,12 +88,7 @@ export const Input = ({
         )}
         
         <TextInput
-          style={[
-            styles.input,
-            multiline && styles.inputMultiline,
-            icon && styles.inputWithIcon,
-            (secureTextEntry || rightElement) && styles.inputWithRight
-          ]}
+          style={getInputStyle()}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}

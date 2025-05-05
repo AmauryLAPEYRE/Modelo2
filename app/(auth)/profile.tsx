@@ -1,16 +1,60 @@
 // app/(auth)/profile.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
+import { useServices } from '../../src/hooks/useServices';
+import { useApplications } from '../../src/hooks/useApplications';
 import { Button } from '../../src/components/ui/Button';
 import { createThemedStyles, useTheme } from '../../src/theme';
 import { Ionicons } from '@expo/vector-icons';
 
+interface ProfileStats {
+  userServices: number;
+  userRating: number | null;
+  userRatingCount: number;
+  userApplications: number;
+}
+
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
+  const { services, loading: servicesLoading } = useServices();
+  const { applications, loading: applicationsLoading } = useApplications(user?.id, user?.role);
   const theme = useTheme();
   const styles = useStyles();
+  const [profileStats, setProfileStats] = useState<ProfileStats>({
+    userServices: 0,
+    userRating: null,
+    userRatingCount: 0,
+    userApplications: 0,
+  });
+
+  useEffect(() => {
+    if (!servicesLoading && !applicationsLoading && user) {
+      // Filtrer les services de l'utilisateur
+      const userServices = services.filter(service => 
+        (user.role === 'professional' && service.professionalId === user.id)
+      ).length;
+
+      // Compter les candidatures
+      let userApplications = 0;
+      if (user.role === 'model') {
+        userApplications = applications.length;
+      } else if (user.role === 'professional') {
+        // Pour les pros, on compte les candidatures reçues
+        userApplications = applications.length;
+      }
+
+      // TODO: Récupérer les vraies notes depuis Firebase
+      // Pour l'instant, pas de note car le système n'est pas implémenté
+      setProfileStats({
+        userServices,
+        userRating: null,
+        userRatingCount: 0,
+        userApplications,
+      });
+    }
+  }, [services, applications, user, servicesLoading, applicationsLoading]);
 
   const handleLogout = async () => {
     await logout();
@@ -28,21 +72,66 @@ export default function ProfileScreen() {
       id: 'notifications',
       icon: 'notifications',
       label: 'Notifications',
-      onPress: () => {}, // A implémenter
+      onPress: () => {}, // À implémenter
     },
     {
       id: 'help',
       icon: 'help-circle',
       label: 'Aide & Support',
-      onPress: () => {}, // A implémenter
+      onPress: () => {}, // À implémenter
     },
     {
       id: 'about',
       icon: 'information-circle',
       label: 'À propos',
-      onPress: () => {}, // A implémenter
+      onPress: () => {}, // À implémenter
     },
   ];
+
+  // Dynamiser l'affichage des statistiques selon le rôle
+  const getStatsConfig = () => {
+    const baseStats = user?.role === 'model' ? [
+      {
+        label: 'Services effectués',
+        value: profileStats.userServices.toString(),
+      },
+      {
+        label: 'Note',
+        value: profileStats.userRating !== null 
+          ? profileStats.userRating.toFixed(1)
+          : '—',
+        subtitle: profileStats.userRating !== null 
+          ? `${profileStats.userRatingCount} avis`
+          : 'Aucune évaluation'
+      },
+      {
+        label: 'Candidatures',
+        value: profileStats.userApplications.toString(),
+      },
+    ] : [
+      {
+        label: 'Services créés',
+        value: profileStats.userServices.toString(),
+      },
+      {
+        label: 'Note',
+        value: profileStats.userRating !== null 
+          ? profileStats.userRating.toFixed(1)
+          : '—',
+        subtitle: profileStats.userRating !== null 
+          ? `${profileStats.userRatingCount} avis`
+          : 'Aucune évaluation'
+      },
+      {
+        label: 'Candidatures reçues',
+        value: profileStats.userApplications.toString(),
+      },
+    ];
+
+    return baseStats;
+  };
+
+  const statsConfig = getStatsConfig();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -57,8 +146,8 @@ export default function ProfileScreen() {
             </View>
           </View>
           
-          <Text style={styles.name}>{user?.name}</Text>
-          <Text style={styles.email}>{user?.email}</Text>
+          <Text style={styles.name}>{user?.name || 'Utilisateur'}</Text>
+          <Text style={styles.email}>{user?.email || ''}</Text>
           
           <View style={styles.roleBadge}>
             <Ionicons 
@@ -73,20 +162,18 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.stats}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>24</Text>
-            <Text style={styles.statLabel}>Services</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>4.8</Text>
-            <Text style={styles.statLabel}>Note</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>156</Text>
-            <Text style={styles.statLabel}>Candidatures</Text>
-          </View>
+          {statsConfig.map((stat, index) => (
+            <React.Fragment key={stat.label}>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{stat.value}</Text>
+                <Text style={styles.statLabel}>{stat.label}</Text>
+                {stat.subtitle && (
+                  <Text style={styles.statSubtitle}>{stat.subtitle}</Text>
+                )}
+              </View>
+              {index < statsConfig.length - 1 && <View style={styles.statDivider} />}
+            </React.Fragment>
+          ))}
         </View>
 
         <View style={styles.options}>
@@ -119,7 +206,6 @@ export default function ProfileScreen() {
             onPress={handleLogout}
             variant="danger"
             fullWidth
-            icon="log-out"
           />
           
           <Text style={styles.version}>
@@ -214,6 +300,11 @@ const useStyles = createThemedStyles((theme) => ({
   statLabel: {
     fontSize: theme.typography.fontSizes.sm,
     color: theme.colors.textSecondary,
+    marginTop: theme.spacing.xs,
+  },
+  statSubtitle: {
+    fontSize: theme.typography.fontSizes.xs,
+    color: theme.colors.textTertiary,
     marginTop: theme.spacing.xs,
   },
   statDivider: {

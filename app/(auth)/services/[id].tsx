@@ -13,13 +13,14 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function ServiceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getService } = useServices();
+  const { getService, deleteService } = useServices();
   const { applyToService, applications } = useApplications();
   const { user } = useAuth();
   const theme = useTheme();
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const styles = useStyles();
 
   useEffect(() => {
@@ -47,6 +48,37 @@ export default function ServiceDetailScreen() {
       Alert.alert('Erreur', 'Une erreur est survenue');
     } finally {
       setApplying(false);
+    }
+  };
+
+  const handleEdit = () => {
+    router.push(`/(auth)/services/edit/${id}`);
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Supprimer la prestation',
+      'Êtes-vous sûr de vouloir supprimer cette prestation ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Supprimer', style: 'destructive', onPress: confirmDelete },
+      ]
+    );
+  };
+
+  const confirmDelete = async () => {
+    if (!id) return;
+    
+    setDeleting(true);
+    try {
+      await deleteService(id);
+      Alert.alert('Succès', 'Prestation supprimée', [
+        { text: 'OK', onPress: () => router.back() }
+      ]);
+    } catch (error) {
+      Alert.alert('Erreur', 'Une erreur est survenue');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -155,14 +187,33 @@ export default function ServiceDetailScreen() {
           )}
 
           {isOwner && (
-            <Button
-              title="Gérer les candidatures"
-              onPress={() => router.push(`/(auth)/applications?serviceId=${id}`)}
-              variant="secondary"
-              fullWidth
-              size="lg"
-              icon="people"
-            />
+            <View style={styles.ownerActions}>
+              <View style={styles.actionButtons}>
+                <Button
+                  title="Modifier"
+                  onPress={handleEdit}
+                  variant="secondary"
+                  style={styles.halfWidthButton}
+                  icon="create"
+                />
+                <Button
+                  title="Supprimer"
+                  onPress={handleDelete}
+                  variant="danger"
+                  style={styles.halfWidthButton}
+                  loading={deleting}
+                  icon="trash"
+                />
+              </View>
+              <Button
+                title="Gérer les candidatures"
+                onPress={() => router.push(`/(auth)/applications?serviceId=${id}`)}
+                variant="outline"
+                fullWidth
+                size="lg"
+                icon="people"
+              />
+            </View>
           )}
         </View>
       </ScrollView>
@@ -265,6 +316,17 @@ const useStyles = createThemedStyles((theme) => ({
     fontSize: theme.typography.fontSizes.lg,
     fontWeight: theme.typography.fontWeights.semibold,
     marginLeft: theme.spacing.sm,
+  },
+  ownerActions: {
+    gap: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+  },
+  halfWidthButton: {
+    flex: 1,
   },
   loading: {
     flex: 1,

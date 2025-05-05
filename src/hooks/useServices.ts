@@ -1,7 +1,7 @@
 // src/hooks/useServices.ts
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, query, where, onSnapshot, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { Service } from '../types/models';
 
 export const useServices = () => {
@@ -49,10 +49,20 @@ export const useServices = () => {
     return null;
   };
 
+  const updateService = async (id: string, updates: Partial<Service>) => {
+    const docRef = doc(db, 'services', id);
+    await updateDoc(docRef, updates);
+  };
+
+  const deleteService = async (id: string) => {
+    const docRef = doc(db, 'services', id);
+    await deleteDoc(docRef);
+  };
+
   const updateServiceStatus = async (id: string, status: Service['status']) => {
     const docRef = doc(db, 'services', id);
     await updateDoc(docRef, { status });
   };
 
-  return { services, loading, createService, getService, updateServiceStatus };
+  return { services, loading, createService, getService, updateService, deleteService, updateServiceStatus };
 };

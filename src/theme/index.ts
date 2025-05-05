@@ -21,7 +21,7 @@ export const theme = {
     borderSecondary: '#404040', // Pour les bordures plus visibles
     
     // États et feedback
-    error: '#EF4444',        // Red 500 - un peu plus vif
+    error: '#B91C1C',        // Red 500 - un peu plus vif
     success: '#059669',      // Emerald 600 - plus saturé
     warning: '#F59E0B',      // Amber 500
     info: '#0891B2',         // Cyan 600

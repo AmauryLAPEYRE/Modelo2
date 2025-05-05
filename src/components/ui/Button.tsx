@@ -1,6 +1,6 @@
 // src/components/ui/Button.tsx
 import React from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, View } from 'react-native';
+import { TouchableOpacity, Text, ActivityIndicator, View, ViewStyle } from 'react-native';
 import { createThemedStyles, useTheme, createVariants } from '../../theme';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -14,6 +14,7 @@ interface ButtonProps {
   disabled?: boolean;
   icon?: keyof typeof Ionicons.glyphMap;
   iconPosition?: 'left' | 'right';
+  style?: ViewStyle;
 }
 
 export const Button = ({ 
@@ -25,7 +26,8 @@ export const Button = ({
   fullWidth = false,
   disabled = false,
   icon,
-  iconPosition = 'left'
+  iconPosition = 'left',
+  style
 }: ButtonProps) => {
   const theme = useTheme();
   const styles = useStyles();
@@ -84,7 +86,8 @@ export const Button = ({
         getVariantStyles(),
         getSizeStyles(),
         fullWidth && styles.fullWidth,
-        getIsDisabled() && styles.disabled
+        getIsDisabled() && styles.disabled,
+        style
       ]}
       onPress={onPress}
       disabled={getIsDisabled()}

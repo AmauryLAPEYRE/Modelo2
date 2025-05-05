@@ -1,8 +1,31 @@
 // src/hooks/useApplications.ts
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, query, where, onSnapshot, addDoc, doc, updateDoc, getDoc, getDocs } from 'firebase/firestore';
+import { 
+  collection, 
+  query, 
+  where, 
+  onSnapshot, 
+  addDoc, 
+  doc, 
+  updateDoc, 
+  getDoc, 
+  getDocs,
+  DocumentSnapshot,
+  QuerySnapshot,
+  FirestoreError,
+  Query,
+  Timestamp
+} from 'firebase/firestore';
 import { Application } from '../types/models';
+
+interface ApplicationData {
+  serviceId: string;
+  modelId: string;
+  status: Application['status'];
+  message?: string;
+  createdAt: Timestamp;
+}
 
 export const useApplications = (userId?: string, userRole?: 'model' | 'professional') => {
   const [applications, setApplications] = useState<Application[]>([]);
@@ -14,9 +37,10 @@ export const useApplications = (userId?: string, userRole?: 'model' | 'professio
       return;
     }
 
-    let q;
+    let q: Query<ApplicationData> | undefined;
+    
     if (userRole === 'model') {
-      q = query(collection(db, 'applications'), where('modelId', '==', userId));
+      q = query(collection(db, 'applications'), where('modelId', '==', userId)) as Query<ApplicationData>;
       listenToApplications(q);
     } else {
       // Pour les professionnels, on récupère les services et ensuite les applications
@@ -26,7 +50,7 @@ export const useApplications = (userId?: string, userRole?: 'model' | 'professio
         const serviceIds = servicesSnapshot.docs.map(doc => doc.id);
         
         if (serviceIds.length > 0) {
-          q = query(collection(db, 'applications'), where('serviceId', 'in', serviceIds));
+          q = query(collection(db, 'applications'), where('serviceId', 'in', serviceIds)) as Query<ApplicationData>;
           listenToApplications(q);
         } else {
           setApplications([]);
@@ -38,20 +62,33 @@ export const useApplications = (userId?: string, userRole?: 'model' | 'professio
       return;
     }
     
-    listenToApplications(q);
+    listenToApplications(q!);
   }, [userId, userRole]);
 
-  const listenToApplications = (q: any) => {
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const applicationsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt.toDate(),
-      })) as Application[];
-      
-      setApplications(applicationsData);
-      setLoading(false);
-    });
+  const listenToApplications = (q: Query<ApplicationData>) => {
+    const unsubscribe = onSnapshot(
+      q, 
+      (snapshot: QuerySnapshot<ApplicationData>) => {
+        const applicationsData = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            serviceId: data.serviceId,
+            modelId: data.modelId,
+            status: data.status,
+            message: data.message,
+            createdAt: data.createdAt.toDate(),
+          } as Application;
+        });
+        
+        setApplications(applicationsData);
+        setLoading(false);
+      },
+      (error: FirestoreError) => {
+        console.error('Error fetching applications:', error);
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   };
@@ -76,10 +113,13 @@ export const useApplications = (userId?: string, userRole?: 'model' | 'professio
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
-      const data = docSnap.data();
+      const data = docSnap.data() as ApplicationData;
       return {
         id: docSnap.id,
-        ...data,
+        serviceId: data.serviceId,
+        modelId: data.modelId,
+        status: data.status,
+        message: data.message,
         createdAt: data.createdAt.toDate(),
       } as Application;
     }
