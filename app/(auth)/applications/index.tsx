@@ -1,5 +1,5 @@
 // app/(auth)/applications/index.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { View, ScrollView, SafeAreaView, Text, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { useApplications } from '../../../src/hooks/useApplications';
@@ -8,11 +8,14 @@ import { ApplicationCard } from '../../../src/components/applications/Applicatio
 import { createThemedStyles, useTheme } from '../../../src/theme';
 import { Ionicons } from '@expo/vector-icons';
 
+type FilterType = 'all' | 'pending' | 'accepted' | 'rejected';
+
 export default function ApplicationsListScreen() {
   const { user } = useAuth();
   const { applications, loading } = useApplications(user?.id, user?.role);
   const theme = useTheme();
   const styles = useStyles();
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
 
   const getFilterTabs = () => {
     const tabs = [
@@ -20,9 +23,14 @@ export default function ApplicationsListScreen() {
       { id: 'pending', label: 'En attente', count: applications.filter(a => a.status === 'pending').length },
       { id: 'accepted', label: 'Acceptées', count: applications.filter(a => a.status === 'accepted').length },
       { id: 'rejected', label: 'Refusées', count: applications.filter(a => a.status === 'rejected').length },
-    ];
+    ] as { id: FilterType; label: string; count: number }[];
     return tabs;
   };
+
+  const filteredApplications = applications.filter(app => {
+    if (activeFilter === 'all') return true;
+    return app.status === activeFilter;
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -31,34 +39,59 @@ export default function ApplicationsListScreen() {
           {user?.role === 'model' ? 'Mes candidatures' : 'Candidatures reçues'}
         </Text>
         <Text style={styles.subtitle}>
-          {applications.length} candidature{applications.length !== 1 ? 's' : ''}
+          {filteredApplications.length} candidature{filteredApplications.length !== 1 ? 's' : ''}
         </Text>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterContainer}>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        style={styles.filterContainer}
+        contentContainerStyle={styles.filterContent}
+      >
         {getFilterTabs().map((tab) => (
           <TouchableOpacity
             key={tab.id}
-            style={styles.filterTab}
-            onPress={() => {}}
+            style={[
+              styles.filterTab,
+              activeFilter === tab.id && styles.filterTabActive
+            ]}
+            onPress={() => setActiveFilter(tab.id)}
           >
-            <Text style={styles.filterLabel}>{tab.label}</Text>
+            <Text style={[
+              styles.filterLabel,
+              activeFilter === tab.id && styles.filterLabelActive
+            ]}>
+              {tab.label}
+            </Text>
             {tab.count > 0 && (
-              <View style={styles.filterBadge}>
-                <Text style={styles.filterBadgeText}>{tab.count}</Text>
+              <View style={[
+                styles.filterBadge,
+                activeFilter === tab.id && styles.filterBadgeActive
+              ]}>
+                <Text style={[
+                  styles.filterBadgeText,
+                  activeFilter === tab.id && styles.filterBadgeTextActive
+                ]}>
+                  {tab.count}
+                </Text>
               </View>
             )}
           </TouchableOpacity>
         ))}
       </ScrollView>
 
-      <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.listContainer} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
+      >
         {loading ? (
           <View style={styles.loading}>
             <Text style={styles.loadingText}>Chargement...</Text>
           </View>
-        ) : applications.length > 0 ? (
-          applications.map(application => (
+        ) : filteredApplications.length > 0 ? (
+          filteredApplications.map(application => (
             <ApplicationCard
               key={application.id}
               application={application}
@@ -104,8 +137,12 @@ const useStyles = createThemedStyles((theme) => ({
     marginTop: theme.spacing.xs,
   },
   filterContainer: {
+    paddingVertical: theme.spacing.sm,
+    maxHeight: 50,
+  },
+  filterContent: {
     paddingHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.lg,
+    alignItems: 'center',
   },
   filterTab: {
     flexDirection: 'row',
@@ -117,29 +154,46 @@ const useStyles = createThemedStyles((theme) => ({
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.xs,
     marginRight: theme.spacing.sm,
+    minHeight: 36,
+  },
+  filterTabActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   filterLabel: {
     color: theme.colors.text,
     fontSize: theme.typography.fontSizes.sm,
     fontWeight: theme.typography.fontWeights.medium,
   },
+  filterLabelActive: {
+    color: 'white',
+  },
   filterBadge: {
     marginLeft: theme.spacing.xs,
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.surface,
     borderRadius: theme.borderRadius.full,
     minWidth: 20,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  filterBadgeActive: {
+    backgroundColor: 'white',
+  },
   filterBadgeText: {
-    color: 'white',
+    color: theme.colors.text,
     fontSize: theme.typography.fontSizes.xs,
     fontWeight: theme.typography.fontWeights.semibold,
   },
+  filterBadgeTextActive: {
+    color: theme.colors.primary,
+  },
   listContainer: {
     flex: 1,
+  },
+  listContent: {
     paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl,
   },
   loading: {
     padding: theme.spacing.xl,
@@ -151,6 +205,7 @@ const useStyles = createThemedStyles((theme) => ({
   empty: {
     padding: theme.spacing.xl,
     alignItems: 'center',
+    paddingTop: theme.spacing['3xl'],
   },
   emptyIcon: {
     width: 96,

@@ -1,4 +1,5 @@
 // app/(auth)/services/index.tsx
+
 import React, { useState } from 'react';
 import { View, ScrollView, SafeAreaView, Text, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
@@ -16,29 +17,52 @@ export default function ServicesListScreen() {
   const styles = useStyles();
   const [filter, setFilter] = useState<'all' | 'free' | 'tfp' | 'paid'>('all');
 
-  const filteredServices = services.filter(service => {
+  // Filtrer d'abord les services de l'utilisateur connecté
+  const userServices = services.filter(service => {
+    if (user?.role === 'professional') {
+      return service.professionalId === user.id;
+    }
+    return true; // Pour les modèles, afficher tous les services publiés
+  });
+
+  // Appliquer ensuite le filtre par type de compensation
+  const filteredServices = userServices.filter(service => {
     if (filter === 'all') return true;
     return service.compensation.type === filter;
   });
 
   const getFilterTabs = () => {
     const tabs = [
-      { id: 'all', label: 'Tous', count: services.length },
-      { id: 'free', label: 'Gratuit', count: services.filter(s => s.compensation.type === 'free').length },
-      { id: 'tfp', label: 'TFP', count: services.filter(s => s.compensation.type === 'tfp').length },
-      { id: 'paid', label: 'Payant', count: services.filter(s => s.compensation.type === 'paid').length },
+      { id: 'all', label: 'Tous', count: userServices.length },
+      { id: 'free', label: 'Gratuit', count: userServices.filter(s => s.compensation.type === 'free').length },
+      { id: 'tfp', label: 'TFP', count: userServices.filter(s => s.compensation.type === 'tfp').length },
+      { id: 'paid', label: 'Payant', count: userServices.filter(s => s.compensation.type === 'paid').length },
     ];
     return tabs;
   };
+
+  const getTitleAndSubtitle = () => {
+    if (user?.role === 'professional') {
+      return {
+        title: 'Mes services',
+        subtitle: `${filteredServices.length} service${filteredServices.length !== 1 ? 's' : ''} créé${filteredServices.length !== 1 ? 's' : ''}`
+      };
+    } else {
+      return {
+        title: 'Services disponibles', 
+        subtitle: `${filteredServices.length} service${filteredServices.length !== 1 ? 's' : ''}`
+      };
+    }
+  };
+
+  const { title, subtitle } = getTitleAndSubtitle();
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>Services disponibles</Text>
-          <Text style={styles.subtitle}>
-            {filteredServices.length} service{filteredServices.length !== 1 ? 's' : ''}
-          </Text>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.subtitle}>{subtitle}</Text>
         </View>
         {user?.role === 'professional' && (
           <Button
@@ -100,7 +124,7 @@ export default function ServicesListScreen() {
               key={service.id}
               service={service}
               onPress={() => router.push(`/(auth)/services/${service.id}`)}
-              showProfessionalInfo={true}
+              showProfessionalInfo={user?.role === 'model'}
             />
           ))
         ) : (
@@ -108,7 +132,11 @@ export default function ServicesListScreen() {
             <View style={styles.emptyIcon}>
               <Ionicons name="calendar" size={64} color={theme.colors.primary} />
             </View>
-            <Text style={styles.emptyTitle}>Aucun service disponible</Text>
+            <Text style={styles.emptyTitle}>
+              {user?.role === 'professional' 
+                ? 'Aucun service créé' 
+                : 'Aucun service disponible'}
+            </Text>
             <Text style={styles.emptyText}>
               {user?.role === 'professional' 
                 ? 'Créez votre premier service pour commencer.'

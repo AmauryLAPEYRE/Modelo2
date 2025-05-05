@@ -3,7 +3,7 @@ import { Stack } from 'expo-router';
 
 export default function ServicesLayout() {
   return (
-    <Stack>
+    <Stack initialRouteName="index">
       <Stack.Screen 
         name="index" 
         options={{ 
@@ -16,6 +16,7 @@ export default function ServicesLayout() {
         options={{ 
           title: 'Détails',
           headerShown: true,
+          presentation: 'modal',
         }} 
       />
       <Stack.Screen 
@@ -23,6 +24,13 @@ export default function ServicesLayout() {
         options={{ 
           title: 'Créer une prestation',
           headerShown: true,
+          presentation: 'modal',
+        }} 
+      />
+      <Stack.Screen 
+        name="edit" 
+        options={{ 
+          headerShown: false, // Edit a son propre layout
         }} 
       />
     </Stack>
