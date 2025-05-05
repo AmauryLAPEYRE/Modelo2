@@ -1,7 +1,7 @@
 // src/hooks/useServices.ts
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, query, where, onSnapshot, addDoc, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, doc, getDoc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { Service } from '../types/models';
 
 export const useServices = () => {
@@ -29,7 +29,7 @@ export const useServices = () => {
   const createService = async (data: Omit<Service, 'id' | 'createdAt'>) => {
     await addDoc(collection(db, 'services'), {
       ...data,
-      createdAt: new Date(),
+      createdAt: Timestamp.now(),
     });
   };
 

@@ -27,6 +27,42 @@ interface ApplicationData {
   createdAt: Timestamp;
 }
 
+// Fonction pour vérifier si une candidature existe déjà
+export const checkIfAlreadyApplied = async (serviceId: string, modelId: string): Promise<boolean> => {
+  const q = query(
+    collection(db, 'applications'),
+    where('serviceId', '==', serviceId),
+    where('modelId', '==', modelId)
+  );
+  
+  const snapshot = await getDocs(q);
+  return !snapshot.empty;
+};
+
+// Fonction pour obtenir une candidature existante
+export const getExistingApplication = async (serviceId: string, modelId: string): Promise<Application | null> => {
+  const q = query(
+    collection(db, 'applications'),
+    where('serviceId', '==', serviceId),
+    where('modelId', '==', modelId)
+  );
+  
+  const snapshot = await getDocs(q);
+  if (!snapshot.empty) {
+    const docData = snapshot.docs[0].data() as ApplicationData;
+    return {
+      id: snapshot.docs[0].id,
+      serviceId: docData.serviceId,
+      modelId: docData.modelId,
+      status: docData.status,
+      message: docData.message,
+      createdAt: docData.createdAt.toDate(),
+    };
+  }
+  
+  return null;
+};
+
 export const useApplications = (userId?: string, userRole?: 'model' | 'professional') => {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +79,6 @@ export const useApplications = (userId?: string, userRole?: 'model' | 'professio
       q = query(collection(db, 'applications'), where('modelId', '==', userId)) as Query<ApplicationData>;
       listenToApplications(q);
     } else {
-      // Pour les professionnels, on récupère les services et ensuite les applications
       const fetchProfessionalApplications = async () => {
         const servicesQuery = query(collection(db, 'services'), where('professionalId', '==', userId));
         const servicesSnapshot = await getDocs(servicesQuery);
@@ -94,13 +129,23 @@ export const useApplications = (userId?: string, userRole?: 'model' | 'professio
   };
 
   const applyToService = async (serviceId: string, modelId: string, message?: string) => {
-    await addDoc(collection(db, 'applications'), {
+    // Vérifiez d'abord si une candidature existe déjà
+    const alreadyApplied = await checkIfAlreadyApplied(serviceId, modelId);
+    
+    if (alreadyApplied) {
+      throw new Error('Vous avez déjà postulé à cette prestation');
+    }
+
+    // Prépare l'objet de candidature en excluant message si undefined
+    const applicationData = {
       serviceId,
       modelId,
-      status: 'pending',
-      message,
-      createdAt: new Date(),
-    });
+      status: 'pending' as const,
+      createdAt: Timestamp.now(),
+      ...(message && { message })
+    };
+
+    await addDoc(collection(db, 'applications'), applicationData);
   };
 
   const updateApplicationStatus = async (id: string, status: Application['status']) => {
@@ -121,7 +166,7 @@ export const useApplications = (userId?: string, userRole?: 'model' | 'professio
         status: data.status,
         message: data.message,
         createdAt: data.createdAt.toDate(),
-      } as Application;
+      };
     }
     return null;
   };

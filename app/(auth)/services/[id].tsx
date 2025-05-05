@@ -3,13 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, SafeAreaView, Alert } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useServices } from '../../../src/hooks/useServices';
-import { useApplications } from '../../../src/hooks/useApplications';
+import { useApplications, checkIfAlreadyApplied, getExistingApplication } from '../../../src/hooks/useApplications';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { Button } from '../../../src/components/ui/Button';
 import { Service } from '../../../src/types/models';
 import { createThemedStyles, useTheme } from '../../../src/theme';
 import { formatDate, formatDuration, formatCurrency } from '../../../src/utils/formatters';
 import { Ionicons } from '@expo/vector-icons';
+import { Application } from '../../../src/types/models';
 
 export default function ServiceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -21,6 +22,8 @@ export default function ServiceDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [existingApplication, setExistingApplication] = useState<Application | null>(null);
+  const [checkingApplication, setCheckingApplication] = useState(true);
   const styles = useStyles();
 
   useEffect(() => {
@@ -34,18 +37,42 @@ export default function ServiceDetailScreen() {
     fetchService();
   }, [id]);
 
-  const hasApplied = applications.some(app => app.serviceId === id);
+  // Vérifiez si l'utilisateur a déjà postulé au chargement et à chaque changement des applications
+  useEffect(() => {
+    const checkApplication = async () => {
+      if (id && user?.id) {
+        setCheckingApplication(true);
+        const existing = await getExistingApplication(id, user.id);
+        setExistingApplication(existing);
+        setCheckingApplication(false);
+      }
+    };
+    checkApplication();
+  }, [id, user?.id, applications]);
+
+  const hasApplied = !!existingApplication;
   const isOwner = service?.professionalId === user?.id;
 
   const handleApply = async () => {
     if (!service || !user) return;
 
+    // Vérification supplémentaire avant l'envoi
+    if (hasApplied) {
+      Alert.alert('Information', 'Vous avez déjà postulé à cette prestation');
+      return;
+    }
+
     setApplying(true);
     try {
       await applyToService(service.id, user.id);
       Alert.alert('Succès', 'Votre candidature a été envoyée');
-    } catch (error) {
-      Alert.alert('Erreur', 'Une erreur est survenue');
+      
+      // Rechargez la candidature existante
+      const newApplication = await getExistingApplication(service.id, user.id);
+      setExistingApplication(newApplication);
+    } catch (error: any) {
+      const errorMessage = error.message || 'Une erreur est survenue';
+      Alert.alert('Erreur', errorMessage);
     } finally {
       setApplying(false);
     }
@@ -99,7 +126,7 @@ export default function ServiceDetailScreen() {
     }
   };
 
-  if (loading) {
+  if (loading || checkingApplication) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loading}>
@@ -179,10 +206,31 @@ export default function ServiceDetailScreen() {
             />
           )}
 
-          {hasApplied && (
+          {hasApplied && existingApplication && (
             <View style={styles.appliedBanner}>
               <Ionicons name="checkmark-circle" size={24} color={theme.colors.primary} />
-              <Text style={styles.appliedText}>Candidature envoyée</Text>
+              <Text style={styles.appliedText}>
+                Candidature envoyée le {formatDate(existingApplication.createdAt)}
+              </Text>
+            </View>
+          )}
+
+          {hasApplied && existingApplication && existingApplication.status !== 'pending' && (
+            <View style={[
+              styles.statusBanner,
+              { borderColor: existingApplication.status === 'accepted' ? theme.colors.success : theme.colors.error }
+            ]}>
+              <Ionicons 
+                name={existingApplication.status === 'accepted' ? 'thumbs-up' : 'thumbs-down'} 
+                size={24} 
+                color={existingApplication.status === 'accepted' ? theme.colors.success : theme.colors.error} 
+              />
+              <Text style={[
+                styles.statusText,
+                { color: existingApplication.status === 'accepted' ? theme.colors.success : theme.colors.error }
+              ]}>
+                Candidature {existingApplication.status === 'accepted' ? 'acceptée' : 'refusée'}
+              </Text>
             </View>
           )}
 
@@ -309,10 +357,24 @@ const useStyles = createThemedStyles((theme) => ({
     borderColor: theme.colors.primary,
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.md,
-    marginBottom: theme.spacing.xl,
+    marginBottom: theme.spacing.md,
   },
   appliedText: {
     color: theme.colors.primary,
+    fontSize: theme.typography.fontSizes.lg,
+    fontWeight: theme.typography.fontWeights.semibold,
+    marginLeft: theme.spacing.sm,
+  },
+  statusBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+  },
+  statusText: {
     fontSize: theme.typography.fontSizes.lg,
     fontWeight: theme.typography.fontWeights.semibold,
     marginLeft: theme.spacing.sm,
