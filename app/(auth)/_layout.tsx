@@ -2,10 +2,11 @@
 import { Redirect, Tabs } from 'expo-router';
 import { useAuth } from '../../src/hooks/useAuth';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../../src/theme';
+import { useTheme } from '../../src/theme';
 
 export default function AuthLayout() {
   const { user, loading } = useAuth();
+  const theme = useTheme();
 
   if (loading) return null;
   if (!user) return <Redirect href="/(public)/login" />;
@@ -14,34 +15,52 @@ export default function AuthLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.textSecondary,
+        tabBarInactiveTintColor: theme.colors.textTertiary,
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.border,
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
         },
         headerStyle: {
           backgroundColor: theme.colors.surface,
           borderBottomColor: theme.colors.border,
         },
         headerTintColor: theme.colors.text,
+        headerShadowVisible: false,
       }}
     >
       <Tabs.Screen
         name="home"
         options={{
           title: 'Accueil',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons 
+              name={focused ? 'home' : 'home-outline'} 
+              size={size + 2} 
+              color={color} 
+            />
           ),
+          headerTitle: 'modelo',
+          headerTitleStyle: {
+            fontFamily: theme.typography.fontFamilies?.logo || 'System',
+            fontSize: theme.typography.fontSizes.xl,
+            fontWeight: theme.typography.fontWeights.bold,
+          },
         }}
       />
       <Tabs.Screen
         name="services"
         options={{
-          title: 'Prestations',
+          title: 'Services',
           headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons 
+              name={focused ? 'calendar' : 'calendar-outline'} 
+              size={size + 2} 
+              color={color} 
+            />
           ),
         }}
       />
@@ -50,8 +69,12 @@ export default function AuthLayout() {
         options={{
           title: 'Candidatures',
           headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="document-text" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons 
+              name={focused ? 'document-text' : 'document-text-outline'} 
+              size={size + 2} 
+              color={color} 
+            />
           ),
         }}
       />
@@ -59,8 +82,12 @@ export default function AuthLayout() {
         name="profile"
         options={{
           title: 'Profil',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons 
+              name={focused ? 'person' : 'person-outline'} 
+              size={size + 2} 
+              color={color} 
+            />
           ),
         }}
       />

@@ -1,80 +1,175 @@
 // src/components/applications/ApplicationCard.tsx
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Application } from '../../types/models';
-import { Card } from '../ui/Card';
-import { createStyles, theme } from '../../theme';
+import { createThemedStyles, useTheme } from '../../theme';
 import { formatDate } from '../../utils/formatters';
+import { Ionicons } from '@expo/vector-icons';
 
 interface ApplicationCardProps {
   application: Application;
   onPress?: () => void;
+  showServiceInfo?: boolean;
 }
 
-export const ApplicationCard = ({ application, onPress }: ApplicationCardProps) => {
+export const ApplicationCard = ({ application, onPress, showServiceInfo = false }: ApplicationCardProps) => {
+  const theme = useTheme();
   const styles = useStyles();
 
-  const getStatusColor = () => {
+  const getStatusConfig = () => {
     switch (application.status) {
       case 'pending':
-        return theme.colors.primary; // Orange pour pending
+        return {
+          color: theme.colors.primary,
+          icon: 'time' as keyof typeof Ionicons.glyphMap,
+          label: 'En attente',
+        };
       case 'accepted':
-        return theme.colors.success;
+        return {
+          color: theme.colors.success,
+          icon: 'checkmark-circle' as keyof typeof Ionicons.glyphMap,
+          label: 'Acceptée',
+        };
       case 'rejected':
-        return theme.colors.error;
+        return {
+          color: theme.colors.error,
+          icon: 'close-circle' as keyof typeof Ionicons.glyphMap,
+          label: 'Refusée',
+        };
       default:
-        return theme.colors.textSecondary;
+        return {
+          color: theme.colors.textSecondary,
+          icon: 'help-circle' as keyof typeof Ionicons.glyphMap,
+          label: application.status,
+        };
     }
   };
 
-  const getStatusText = () => {
-    switch (application.status) {
-      case 'pending':
-        return 'En attente';
-      case 'accepted':
-        return 'Acceptée';
-      case 'rejected':
-        return 'Refusée';
-      default:
-        return application.status;
-    }
-  };
+  const statusConfig = getStatusConfig();
 
   return (
-    <Card onPress={onPress}>
-      <View style={styles.row}>
-        <Text style={styles.status} style={{ color: getStatusColor() }}>
-          {getStatusText()}
-        </Text>
-        <Text style={styles.date}>{formatDate(application.createdAt)}</Text>
+    <TouchableOpacity
+      style={styles.container}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <View style={styles.card}>
+        <View style={styles.header}>
+          <View style={[styles.status, { backgroundColor: `${statusConfig.color}1A` }]}>
+            <Ionicons name={statusConfig.icon} size={20} color={statusConfig.color} />
+            <Text style={[styles.statusText, { color: statusConfig.color }]}>
+              {statusConfig.label}
+            </Text>
+          </View>
+          <Text style={styles.date}>{formatDate(application.createdAt)}</Text>
+        </View>
+        
+        {application.message && (
+          <View style={styles.messageContainer}>
+            <Text style={styles.messageLabel}>Votre message :</Text>
+            <Text style={styles.message} numberOfLines={2}>
+              {application.message}
+            </Text>
+          </View>
+        )}
+        
+        {showServiceInfo && (
+          <View style={styles.serviceInfo}>
+            <Ionicons name="briefcase-outline" size={16} color={theme.colors.primary} />
+            <Text style={styles.serviceText}>Service #{application.serviceId.slice(-6)}</Text>
+          </View>
+        )}
+        
+        <View style={styles.footer}>
+          <View style={styles.footerItem}>
+            <Ionicons name="document-text" size={16} color={theme.colors.textSecondary} />
+            <Text style={styles.footerText}>ID: {application.id.slice(-6)}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={theme.colors.textSecondary} />
+        </View>
       </View>
-      
-      {application.message && (
-        <Text style={styles.message} numberOfLines={2}>
-          {application.message}
-        </Text>
-      )}
-    </Card>
+    </TouchableOpacity>
   );
 };
 
-const useStyles = createStyles(() => ({
-  row: {
+const useStyles = createThemedStyles((theme) => ({
+  container: {
+    marginBottom: theme.spacing.md,
+  },
+  card: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing.xs,
+    marginBottom: theme.spacing.sm,
   },
   status: {
-    fontSize: theme.typography.fontSizes.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: theme.borderRadius.lg,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    gap: theme.spacing.xs,
+  },
+  statusText: {
+    fontSize: theme.typography.fontSizes.sm,
     fontWeight: theme.typography.fontWeights.semibold,
   },
   date: {
     color: theme.colors.textSecondary,
     fontSize: theme.typography.fontSizes.sm,
   },
-  message: {
+  messageContainer: {
+    marginBottom: theme.spacing.sm,
+  },
+  messageLabel: {
     color: theme.colors.text,
+    fontSize: theme.typography.fontSizes.sm,
+    fontWeight: theme.typography.fontWeights.medium,
+    marginBottom: theme.spacing.xs,
+  },
+  message: {
+    color: theme.colors.textSecondary,
     fontSize: theme.typography.fontSizes.md,
+    lineHeight: theme.typography.lineHeights.normal,
+  },
+  serviceInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: theme.spacing.sm,
+    gap: theme.spacing.xs,
+  },
+  serviceText: {
+    color: theme.colors.primary,
+    fontSize: theme.typography.fontSizes.sm,
+    fontWeight: theme.typography.fontWeights.medium,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: theme.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
+  footerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+  },
+  footerText: {
+    color: theme.colors.textSecondary,
+    fontSize: theme.typography.fontSizes.sm,
   },
 }));

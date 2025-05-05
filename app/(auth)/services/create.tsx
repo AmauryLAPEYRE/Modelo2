@@ -6,11 +6,12 @@ import { useServices } from '../../../src/hooks/useServices';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { Button } from '../../../src/components/ui/Button';
 import { Input } from '../../../src/components/ui/Input';
-import { createStyles, theme } from '../../../src/theme';
+import { createThemedStyles, useTheme } from '../../../src/theme';
 
 export default function CreateServiceScreen() {
   const { createService } = useServices();
   const { user } = useAuth();
+  const theme = useTheme();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
@@ -37,7 +38,7 @@ export default function CreateServiceScreen() {
         title,
         description,
         professionalId: user.id,
-        date: new Date(), // Pour simplifier, on met la date d'aujourd'hui
+        date: new Date(),
         duration: parseInt(duration),
         compensation: {
           type: compensationType,
@@ -60,73 +61,100 @@ export default function CreateServiceScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
+      <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          <Text style={styles.title}>Créer une prestation</Text>
-
-          <Input
-            label="Titre"
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Ex: Coupe et coiffage"
-          />
-
-          <Input
-            label="Description"
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Décrivez votre prestation..."
-          />
-
-          <Input
-            label="Lieu"
-            value={location}
-            onChangeText={setLocation}
-            placeholder="Ex: Paris 10ème arrondissement"
-          />
-
-          <Input
-            label="Durée (minutes)"
-            value={duration}
-            onChangeText={setDuration}
-            placeholder="Ex: 60"
-          />
-
-          <Text style={styles.label}>Type de compensation</Text>
-          <View style={styles.compensationContainer}>
-            {(['free', 'paid', 'tfp'] as const).map((type) => (
-              <Button
-                key={type}
-                title={type === 'free' ? 'Gratuit' : type === 'paid' ? 'Payant' : 'TFP'}
-                onPress={() => setCompensationType(type)}
-                variant={compensationType === type ? 'primary' : 'ghost'}
-                fullWidth
-              />
-            ))}
+          <View style={styles.header}>
+            <Text style={styles.title}>Nouvelle prestation</Text>
+            <Text style={styles.subtitle}>Définissez les détails de votre service</Text>
           </View>
 
-          {compensationType === 'paid' && (
+          <View style={styles.form}>
             <Input
-              label="Montant (€)"
-              value={amount}
-              onChangeText={setAmount}
-              placeholder="Ex: 50"
+              label="Titre"
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Ex: Séance photo portrait"
+              icon="camera"
             />
-          )}
 
-          <Button
-            title="Créer la prestation"
-            onPress={handleSubmit}
-            loading={loading}
-            fullWidth
-          />
+            <Input
+              label="Description"
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Décrivez votre prestation..."
+              multiline
+              numberOfLines={4}
+              icon="document-text"
+            />
+
+            <Input
+              label="Lieu"
+              value={location}
+              onChangeText={setLocation}
+              placeholder="Ex: Studio Paris 10ème"
+              icon="location"
+            />
+
+            <Input
+              label="Durée (minutes)"
+              value={duration}
+              onChangeText={setDuration}
+              placeholder="Ex: 60"
+              keyboardType="numeric"
+              icon="time"
+            />
+
+            <View style={styles.compensationSection}>
+              <Text style={styles.label}>Type de compensation</Text>
+              <View style={styles.compensationContainer}>
+                {(['free', 'paid', 'tfp'] as const).map((type) => (
+                  <Button
+                    key={type}
+                    title={type === 'free' ? 'Gratuit' : type === 'paid' ? 'Payant' : 'TFP'}
+                    onPress={() => setCompensationType(type)}
+                    variant={compensationType === type ? 'primary' : 'outline'}
+                    fullWidth
+                  />
+                ))}
+              </View>
+            </View>
+
+            {compensationType === 'paid' && (
+              <Input
+                label="Montant (€)"
+                value={amount}
+                onChangeText={setAmount}
+                placeholder="Ex: 50"
+                keyboardType="numeric"
+                icon="cash"
+              />
+            )}
+
+            <View style={styles.footer}>
+              <Button
+                title="Créer la prestation"
+                onPress={handleSubmit}
+                loading={loading}
+                fullWidth
+                size="lg"
+                icon="add-circle"
+              />
+              
+              <Button
+                title="Annuler"
+                onPress={() => router.back()}
+                variant="ghost"
+                fullWidth
+              />
+            </View>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const useStyles = createStyles(() => ({
+const useStyles = createThemedStyles((theme) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -134,20 +162,36 @@ const useStyles = createStyles(() => ({
   content: {
     padding: theme.spacing.lg,
   },
+  header: {
+    marginBottom: theme.spacing.xl,
+  },
   title: {
-    fontSize: theme.typography.fontSizes.xl,
+    fontSize: theme.typography.fontSizes['2xl'],
     fontWeight: theme.typography.fontWeights.bold,
     color: theme.colors.text,
-    marginBottom: theme.spacing.lg,
+    marginBottom: theme.spacing.xs,
+  },
+  subtitle: {
+    fontSize: theme.typography.fontSizes.md,
+    color: theme.colors.textSecondary,
+  },
+  form: {
+    gap: theme.spacing.lg,
+  },
+  compensationSection: {
+    gap: theme.spacing.sm,
   },
   label: {
     color: theme.colors.text,
     fontSize: theme.typography.fontSizes.sm,
-    marginBottom: theme.spacing.xs,
-    marginTop: theme.spacing.md,
+    fontWeight: theme.typography.fontWeights.medium,
   },
   compensationContainer: {
+    flexDirection: 'row',
     gap: theme.spacing.sm,
-    marginBottom: theme.spacing.lg,
+  },
+  footer: {
+    marginTop: theme.spacing.lg,
+    gap: theme.spacing.sm,
   },
 }));

@@ -1,26 +1,47 @@
 // src/components/ui/Button.tsx
 import React from 'react';
-import { TouchableOpacity, Text, ActivityIndicator } from 'react-native';
-import { createStyles, theme } from '../../theme';
+import { TouchableOpacity, Text, ActivityIndicator, View } from 'react-native';
+import { createThemedStyles, useTheme, createVariants } from '../../theme';
+import { Ionicons } from '@expo/vector-icons';
 
 interface ButtonProps {
   onPress: () => void;
   title: string;
-  variant?: 'primary' | 'secondary' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'outline' | 'danger';
+  size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   fullWidth?: boolean;
+  disabled?: boolean;
+  icon?: keyof typeof Ionicons.glyphMap;
+  iconPosition?: 'left' | 'right';
 }
 
 export const Button = ({ 
   onPress, 
   title, 
   variant = 'primary', 
+  size = 'md',
   loading = false,
-  fullWidth = false 
+  fullWidth = false,
+  disabled = false,
+  icon,
+  iconPosition = 'left'
 }: ButtonProps) => {
+  const theme = useTheme();
   const styles = useStyles();
 
-  const getVariantStyle = () => {
+  const getSizeStyles = () => {
+    switch (size) {
+      case 'sm':
+        return styles.sizeSmall;
+      case 'lg':
+        return styles.sizeLarge;
+      default:
+        return styles.sizeMedium;
+    }
+  };
+
+  const getVariantStyles = () => {
     switch (variant) {
       case 'primary':
         return styles.primary;
@@ -28,12 +49,16 @@ export const Button = ({
         return styles.secondary;
       case 'ghost':
         return styles.ghost;
+      case 'outline':
+        return styles.outline;
+      case 'danger':
+        return styles.danger;
       default:
         return styles.primary;
     }
   };
 
-  const getTextStyle = () => {
+  const getTextStyles = () => {
     switch (variant) {
       case 'primary':
         return styles.primaryText;
@@ -41,69 +66,150 @@ export const Button = ({
         return styles.secondaryText;
       case 'ghost':
         return styles.ghostText;
+      case 'outline':
+        return styles.outlineText;
+      case 'danger':
+        return styles.dangerText;
       default:
         return styles.primaryText;
     }
   };
 
+  const getIsDisabled = () => loading || disabled;
+
   return (
     <TouchableOpacity
       style={[
         styles.button,
-        getVariantStyle(),
+        getVariantStyles(),
+        getSizeStyles(),
         fullWidth && styles.fullWidth,
-        loading && styles.loading
+        getIsDisabled() && styles.disabled
       ]}
       onPress={onPress}
-      disabled={loading}
+      disabled={getIsDisabled()}
+      activeOpacity={0.8}
     >
-      {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? '#000' : '#FFF'} />
-      ) : (
-        <Text style={getTextStyle()}>{title}</Text>
-      )}
+      <View style={styles.content}>
+        {loading ? (
+          <ActivityIndicator 
+            color={variant === 'primary' || variant === 'secondary' ? '#fff' : theme.colors.primary} 
+            size={size === 'sm' ? 'small' : undefined}
+          />
+        ) : (
+          <>
+            {icon && iconPosition === 'left' && (
+              <Ionicons 
+                name={icon} 
+                size={size === 'sm' ? 16 : size === 'lg' ? 24 : 20} 
+                color={variant === 'primary' || variant === 'secondary' ? '#fff' : theme.colors.primary}
+                style={styles.iconLeft}
+              />
+            )}
+            <Text style={[getTextStyles(), getSizeStyles().text]}>
+              {title}
+            </Text>
+            {icon && iconPosition === 'right' && (
+              <Ionicons 
+                name={icon} 
+                size={size === 'sm' ? 16 : size === 'lg' ? 24 : 20} 
+                color={variant === 'primary' || variant === 'secondary' ? '#fff' : theme.colors.primary}
+                style={styles.iconRight}
+              />
+            )}
+          </>
+        )}
+      </View>
     </TouchableOpacity>
   );
 };
 
-const useStyles = createStyles(() => ({
+const useStyles = createThemedStyles((theme) => ({
   button: {
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
+    borderRadius: theme.borderRadius.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  content: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
   primary: {
-    backgroundColor: theme.colors.primary, // Orange
+    backgroundColor: theme.colors.primary,
   },
   secondary: {
-    backgroundColor: theme.colors.secondary,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   ghost: {
     backgroundColor: 'transparent',
+  },
+  outline: {
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: theme.colors.primary, // Orange border pour ghost
+    borderColor: theme.colors.primary,
+  },
+  danger: {
+    backgroundColor: theme.colors.error,
   },
   primaryText: {
-    color: '#000',
+    color: 'white',
     fontWeight: theme.typography.fontWeights.semibold,
-    fontFamily: theme.typography.fontFamilies?.body || 'System',
   },
   secondaryText: {
-    color: '#FFF',
+    color: theme.colors.text,
     fontWeight: theme.typography.fontWeights.semibold,
-    fontFamily: theme.typography.fontFamilies?.body || 'System',
   },
   ghostText: {
-    color: theme.colors.primary, // Orange text pour ghost
+    color: theme.colors.primary,
     fontWeight: theme.typography.fontWeights.semibold,
-    fontFamily: theme.typography.fontFamilies?.body || 'System',
+  },
+  outlineText: {
+    color: theme.colors.primary,
+    fontWeight: theme.typography.fontWeights.semibold,
+  },
+  dangerText: {
+    color: 'white',
+    fontWeight: theme.typography.fontWeights.semibold,
+  },
+  sizeSmall: {
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.sm,
+    text: {
+      fontSize: theme.typography.fontSizes.sm,
+    },
+  },
+  sizeMedium: {
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    text: {
+      fontSize: theme.typography.fontSizes.md,
+    },
+  },
+  sizeLarge: {
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xl,
+    text: {
+      fontSize: theme.typography.fontSizes.lg,
+    },
   },
   fullWidth: {
     width: '100%',
   },
-  loading: {
-    opacity: 0.7,
+  disabled: {
+    opacity: 0.5,
+  },
+  iconLeft: {
+    marginRight: theme.spacing.xs,
+  },
+  iconRight: {
+    marginLeft: theme.spacing.xs,
   },
 }));

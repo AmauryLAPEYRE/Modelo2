@@ -7,14 +7,16 @@ import { useServices } from '../../../src/hooks/useServices';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { Button } from '../../../src/components/ui/Button';
 import { Application, Service } from '../../../src/types/models';
-import { createStyles, theme } from '../../../src/theme';
+import { createThemedStyles, useTheme } from '../../../src/theme';
 import { formatDate } from '../../../src/utils/formatters';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function ApplicationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getApplication, updateApplicationStatus } = useApplications();
   const { getService } = useServices();
   const { user } = useAuth();
+  const theme = useTheme();
   const [application, setApplication] = useState<Application | null>(null);
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
@@ -69,10 +71,42 @@ export default function ApplicationDetailScreen() {
 
   const canManage = user?.role === 'professional' && service?.professionalId === user.id;
 
+  const getStatusConfig = () => {
+    if (!application) return null;
+    
+    switch (application.status) {
+      case 'pending':
+        return {
+          label: 'En attente',
+          color: theme.colors.primary,
+          icon: 'time' as keyof typeof Ionicons.glyphMap,
+          backgroundColor: `${theme.colors.primary}1A`,
+        };
+      case 'accepted':
+        return {
+          label: 'Acceptée',
+          color: theme.colors.success,
+          icon: 'checkmark-circle' as keyof typeof Ionicons.glyphMap,
+          backgroundColor: `${theme.colors.success}1A`,
+        };
+      case 'rejected':
+        return {
+          label: 'Refusée',
+          color: theme.colors.error,
+          icon: 'close-circle' as keyof typeof Ionicons.glyphMap,
+          backgroundColor: `${theme.colors.error}1A`,
+        };
+      default:
+        return null;
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.loadingText}>Chargement...</Text>
+        <View style={styles.loading}>
+          <Text style={styles.loadingText}>Chargement...</Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -80,37 +114,48 @@ export default function ApplicationDetailScreen() {
   if (!application) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.errorText}>Candidature non trouvée</Text>
+        <View style={styles.error}>
+          <Ionicons name="alert-circle" size={48} color={theme.colors.error} />
+          <Text style={styles.errorText}>Candidature non trouvée</Text>
+        </View>
       </SafeAreaView>
     );
   }
 
+  const statusConfig = getStatusConfig();
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
+      <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          <Text style={styles.title}>Candidature</Text>
+          <View style={styles.header}>
+            <Text style={styles.title}>Candidature #{application.id.slice(-6)}</Text>
+            {statusConfig && (
+              <View style={[styles.statusBadge, { backgroundColor: statusConfig.backgroundColor }]}>
+                <Ionicons name={statusConfig.icon} size={24} color={statusConfig.color} />
+                <Text style={[styles.statusText, { color: statusConfig.color }]}>
+                  {statusConfig.label}
+                </Text>
+              </View>
+            )}
+          </View>
           
-          <View style={styles.statusContainer}>
-            <Text style={styles.statusText}>
-              Statut: {application.status === 'pending' ? 'En attente' : 
-                      application.status === 'accepted' ? 'Acceptée' : 'Refusée'}
-            </Text>
-            <Text style={styles.dateText}>
-              Déposée le {formatDate(application.createdAt)}
-            </Text>
+          <View style={styles.card}>
+            <Text style={styles.infoLabel}>Date de candidature</Text>
+            <Text style={styles.infoValue}>{formatDate(application.createdAt)}</Text>
           </View>
 
           {service && (
-            <View style={styles.serviceInfo}>
-              <Text style={styles.serviceTitle}>Service: {service.title}</Text>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Prestation concernée</Text>
+              <Text style={styles.serviceTitle}>{service.title}</Text>
               <Text style={styles.serviceDate}>Date: {formatDate(service.date)}</Text>
             </View>
           )}
 
           {application.message && (
-            <View style={styles.messageContainer}>
-              <Text style={styles.messageLabel}>Message:</Text>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Message du candidat</Text>
               <Text style={styles.messageText}>{application.message}</Text>
             </View>
           )}
@@ -118,18 +163,33 @@ export default function ApplicationDetailScreen() {
           {canManage && application.status === 'pending' && (
             <View style={styles.actions}>
               <Button
-                title="Accepter"
+                title="Accepter la candidature"
                 onPress={handleAccept}
                 loading={actionLoading}
                 fullWidth
+                size="lg"
+                icon="checkmark-circle"
               />
               <Button
-                title="Refuser"
+                title="Refuser la candidature"
                 onPress={handleReject}
                 loading={actionLoading}
-                variant="ghost"
+                variant="outline"
                 fullWidth
+                size="lg"
+                icon="close-circle"
               />
+            </View>
+          )}
+
+          {!canManage && (
+            <View style={styles.infoBox}>
+              <Ionicons name="information-circle" size={24} color={theme.colors.primary} />
+              <Text style={styles.infoBoxText}>
+                {user?.role === 'model' 
+                  ? 'Vous recevrez une notification si votre candidature est acceptée.'
+                  : 'Cette candidature n\'est pas associée à votre compte.'}
+              </Text>
             </View>
           )}
         </View>
@@ -138,7 +198,7 @@ export default function ApplicationDetailScreen() {
   );
 }
 
-const useStyles = createStyles(() => ({
+const useStyles = createThemedStyles((theme) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -146,59 +206,98 @@ const useStyles = createStyles(() => ({
   content: {
     padding: theme.spacing.lg,
   },
-  title: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.lg,
+  header: {
+    marginBottom: theme.spacing.xl,
   },
-  statusContainer: {
-    marginBottom: theme.spacing.lg,
+  title: {
+    fontSize: theme.typography.fontSizes['2xl'],
+    fontWeight: theme.typography.fontWeights.bold,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.md,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
   },
   statusText: {
-    fontSize: theme.typography.sizes.lg,
-    color: theme.colors.text,
+    fontSize: theme.typography.fontSizes.lg,
+    fontWeight: theme.typography.fontWeights.semibold,
+  },
+  card: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  infoLabel: {
+    fontSize: theme.typography.fontSizes.sm,
+    color: theme.colors.textSecondary,
     marginBottom: theme.spacing.xs,
   },
-  dateText: {
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.textSecondary,
+  infoValue: {
+    fontSize: theme.typography.fontSizes.md,
+    color: theme.colors.text,
+    fontWeight: theme.typography.fontWeights.medium,
   },
-  serviceInfo: {
-    marginBottom: theme.spacing.lg,
+  sectionTitle: {
+    fontSize: theme.typography.fontSizes.lg,
+    fontWeight: theme.typography.fontWeights.semibold,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.sm,
   },
   serviceTitle: {
-    fontSize: theme.typography.sizes.lg,
+    fontSize: theme.typography.fontSizes.lg,
     color: theme.colors.text,
     marginBottom: theme.spacing.xs,
   },
   serviceDate: {
-    fontSize: theme.typography.sizes.md,
+    fontSize: theme.typography.fontSizes.md,
     color: theme.colors.textSecondary,
-  },
-  messageContainer: {
-    marginBottom: theme.spacing.xl,
-  },
-  messageLabel: {
-    fontSize: theme.typography.sizes.md,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.xs,
   },
   messageText: {
-    fontSize: theme.typography.sizes.md,
+    fontSize: theme.typography.fontSizes.md,
     color: theme.colors.textSecondary,
+    lineHeight: theme.typography.lineHeights.relaxed,
   },
   actions: {
-    gap: theme.spacing.sm,
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.xl,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    marginTop: theme.spacing.xl,
+  },
+  infoBoxText: {
+    color: theme.colors.primary,
+    fontSize: theme.typography.fontSizes.md,
+    marginLeft: theme.spacing.sm,
+    flex: 1,
+  },
+  loading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   loadingText: {
     color: theme.colors.textSecondary,
-    textAlign: 'center',
-    marginTop: theme.spacing.lg,
+  },
+  error: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   errorText: {
     color: theme.colors.error,
-    textAlign: 'center',
-    marginTop: theme.spacing.lg,
+    marginTop: theme.spacing.md,
   },
 }));
