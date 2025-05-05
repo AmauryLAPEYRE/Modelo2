@@ -1,149 +1,96 @@
 // app/(public)/login.tsx
-import { useRouter } from 'expo-router';
-import { Formik } from 'formik';
 import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import * as Yup from 'yup';
-import { Button, Input } from '../../src/components/ui';
-import { createThemedStyles } from '../../src/utils/theme';
-import { useAuthViewModel } from '../../src/viewModels/useAuthViewModel';
-
-// Schéma de validation
-const LoginSchema = Yup.object().shape({
-  email: Yup.string()
-    .email('Email invalide')
-    .required('L\'email est requis'),
-  password: Yup.string()
-    .min(6, 'Le mot de passe doit contenir au moins 6 caractères')
-    .required('Le mot de passe est requis'),
-});
+import { View, Text, SafeAreaView, Alert } from 'react-native';
+import { router } from 'expo-router';
+import { Button } from '../../src/components/ui/Button';
+import { Input } from '../../src/components/ui/Input';
+import { useAuth } from '../../src/hooks/useAuth';
+import { createStyles, theme } from '../../src/theme';
 
 export default function LoginScreen() {
-  const router = useRouter();
-  const { login, error, clearError } = useAuthViewModel();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
   const styles = useStyles();
 
-  const handleLogin = async (values: { email: string; password: string }) => {
-    setIsSubmitting(true);
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      return;
+    }
+
+    setLoading(true);
     try {
-      await login({
-        email: values.email,
-        password: values.password,
-      });
+      await login(email, password);
       router.replace('/(auth)/home');
     } catch (error) {
-      Alert.alert('Erreur de connexion', (error as Error).message);
+      Alert.alert('Erreur', 'Email ou mot de passe incorrect');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.header}>
-          <Text style={styles.title}>Modelo</Text>
-          <Text style={styles.subtitle}>Connectez-vous à votre compte</Text>
-        </View>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.content}>
+        <Text style={styles.title}>Modelo</Text>
+        <Text style={styles.subtitle}>Connectez-vous</Text>
 
-        <Formik
-          initialValues={{ email: '', password: '' }}
-          validationSchema={LoginSchema}
-          onSubmit={handleLogin}
-        >
-          {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
-            <View style={styles.form}>
-              <Input
-                label="Email"
-                placeholder="votre@email.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={values.email}
-                onChangeText={handleChange('email')}
-                onBlur={handleBlur('email')}
-                error={touched.email && errors.email ? errors.email : undefined}
-              />
+        <Input
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="email@example.com"
+        />
 
-              <Input
-                label="Mot de passe"
-                placeholder="••••••••"
-                secureTextEntry
-                value={values.password}
-                onChangeText={handleChange('password')}
-                onBlur={handleBlur('password')}
-                error={touched.password && errors.password ? errors.password : undefined}
-              />
+        <Input
+          label="Mot de passe"
+          value={password}
+          onChangeText={setPassword}
+          placeholder="••••••••"
+          secureTextEntry
+        />
 
-              <Button
-                title="Se connecter"
-                onPress={() => handleSubmit()}
-                loading={isSubmitting}
-                fullWidth
-                size="lg"
-              />
-            </View>
-          )}
-        </Formik>
+        <Button
+          title="Se connecter"
+          onPress={handleLogin}
+          loading={loading}
+          fullWidth
+        />
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Vous n'avez pas de compte?</Text>
-          <TouchableOpacity onPress={() => router.push('/(public)/register')}>
-            <Text style={styles.footerLink}>Créer un compte</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        <Text style={styles.link} onPress={() => router.push('/(public)/register')}>
+          Créer un compte
+        </Text>
+      </View>
+    </SafeAreaView>
   );
 }
 
-const useStyles = createThemedStyles((theme) => ({
+const useStyles = createStyles(() => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
+  content: {
+    flex: 1,
     padding: theme.spacing.lg,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: theme.spacing.xl,
+    justifyContent: 'center',
   },
   title: {
-    fontSize: theme.typography.fontSizes['3xl'],
-    fontWeight: theme.typography.fontWeights.bold,
-    color: theme.colors.primary,
+    fontSize: theme.typography.sizes['2xl'],
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.text,
     marginBottom: theme.spacing.xs,
   },
   subtitle: {
-    fontSize: theme.typography.fontSizes.lg,
+    fontSize: theme.typography.sizes.lg,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
-  },
-  form: {
-    width: '100%',
     marginBottom: theme.spacing.xl,
   },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: theme.spacing.md,
-  },
-  footerText: {
-    color: theme.colors.textSecondary,
-    marginRight: theme.spacing.xs,
-  },
-  footerLink: {
+  link: {
     color: theme.colors.primary,
-    fontWeight: theme.typography.fontWeights.medium,
+    textAlign: 'center',
+    marginTop: theme.spacing.lg,
   },
 }));

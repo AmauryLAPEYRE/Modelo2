@@ -1,45 +1,28 @@
 // app/_layout.tsx
-import React from 'react';
-import { Slot, SplashScreen } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { Stack } from 'expo-router';
 import { onAuthStateChanged } from 'firebase/auth';
-import { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { auth } from '../src/services/firebase/config';
-import { ThemeProvider } from '../src/utils/theme';
-import { useAuthViewModel } from '../src/viewModels/useAuthViewModel';
-
-// Empêcher le SplashScreen de se cacher automatiquement
-SplashScreen.preventAutoHideAsync();
+import { auth } from '../src/lib/firebase';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const { setCurrentUser, isLoading, setIsLoading } = useAuthViewModel();
-
-  useEffect(() => {
-    // Observer les changements d'état d'authentification
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      await setCurrentUser(user);
-      setIsLoading(false);
-      // Cacher le SplashScreen une fois l'auth vérifiée
-      SplashScreen.hideAsync();
-    });
-
-    // Nettoyer l'observer quand le composant est démonté
-    return unsubscribe;
-  }, []);
-
-  if (isLoading) {
-    return null; // Le SplashScreen est toujours visible
-  }
-
   return (
-    <SafeAreaProvider>
-      <ThemeProvider colorScheme={colorScheme}>
-        <StatusBar style="auto" />
-        <Slot />
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <>
+      <StatusBar style="light" />
+      <Stack
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: '#000000',
+          },
+          headerTintColor: '#FFFFFF',
+          headerTitleStyle: {
+            fontWeight: '600',
+          },
+        }}
+      >
+        <Stack.Screen name="(public)" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      </Stack>
+    </>
   );
 }

@@ -1,4 +1,4 @@
-// src/utils/theme.ts
+// src/utils/theme.tsx
 import React, { createContext, ReactNode, useContext } from 'react';
 import { StyleSheet } from 'react-native';
 
@@ -141,7 +141,13 @@ const ThemeContext = createContext<Theme>({
 });
 
 // Hook pour utiliser le thème
-export const useTheme = () => useContext(ThemeContext);
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  return context;
+};
 
 // Provider du thème
 type ThemeProviderProps = {
@@ -174,6 +180,18 @@ export const createThemedStyles = <T extends StyleSheet.NamedStyles<T>>(
 ) => {
   return () => {
     const theme = useTheme();
-    return StyleSheet.create(stylesFactory(theme));
+    
+    if (!theme) {
+      console.error('Theme is undefined');
+      return StyleSheet.create({} as T);
+    }
+    
+    try {
+      const styles = stylesFactory(theme);
+      return StyleSheet.create(styles);
+    } catch (error) {
+      console.error('Error creating themed styles:', error);
+      return StyleSheet.create({} as T);
+    }
   };
 };

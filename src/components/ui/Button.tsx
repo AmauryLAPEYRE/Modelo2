@@ -1,204 +1,106 @@
 // src/components/ui/Button.tsx
 import React from 'react';
-import {
-    ActivityIndicator,
-    StyleProp,
-    Text,
-    TextStyle,
-    TouchableOpacity,
-    TouchableOpacityProps,
-    ViewStyle
-} from 'react-native';
-import { createThemedStyles, useTheme } from '../../utils/theme';
+import { TouchableOpacity, Text, ActivityIndicator } from 'react-native';
+import { createStyles, theme } from '../../theme';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
-export type ButtonSize = 'sm' | 'md' | 'lg';
-
-interface ButtonProps extends TouchableOpacityProps {
-  variant?: ButtonVariant;
-  size?: ButtonSize;
+interface ButtonProps {
+  onPress: () => void;
+  title: string;
+  variant?: 'primary' | 'secondary' | 'ghost';
   loading?: boolean;
   fullWidth?: boolean;
-  icon?: React.ReactNode;
-  iconPosition?: 'left' | 'right';
-  title: string;
-  buttonStyle?: StyleProp<ViewStyle>;
-  textStyle?: StyleProp<TextStyle>;
 }
 
-export const Button = ({
-  variant = 'primary',
-  size = 'md',
+export const Button = ({ 
+  onPress, 
+  title, 
+  variant = 'primary', 
   loading = false,
-  fullWidth = false,
-  disabled = false,
-  icon,
-  iconPosition = 'left',
-  title,
-  buttonStyle,
-  textStyle,
-  ...props
+  fullWidth = false 
 }: ButtonProps) => {
-  const theme = useTheme();
   const styles = useStyles();
 
-  // Styles basés sur la variante
-  const variantStyles = {
-    primary: styles.primary,
-    secondary: styles.secondary,
-    outline: styles.outline,
-    ghost: styles.ghost,
-    danger: styles.danger,
+  const getVariantStyle = () => {
+    switch (variant) {
+      case 'primary':
+        return styles.primary;
+      case 'secondary':
+        return styles.secondary;
+      case 'ghost':
+        return styles.ghost;
+      default:
+        return styles.primary;
+    }
   };
 
-  // Styles de texte basés sur la variante
-  const textVariantStyles = {
-    primary: styles.primaryText,
-    secondary: styles.secondaryText,
-    outline: styles.outlineText,
-    ghost: styles.ghostText,
-    danger: styles.dangerText,
-  };
-
-  // Styles basés sur la taille
-  const sizeStyles = {
-    sm: styles.sizeSmall,
-    md: styles.sizeMedium,
-    lg: styles.sizeLarge,
-  };
-
-  // Styles de texte basés sur la taille
-  const textSizeStyles = {
-    sm: styles.textSmall,
-    md: styles.textMedium,
-    lg: styles.textLarge,
+  const getTextStyle = () => {
+    switch (variant) {
+      case 'primary':
+        return styles.primaryText;
+      case 'secondary':
+        return styles.secondaryText;
+      case 'ghost':
+        return styles.ghostText;
+      default:
+        return styles.primaryText;
+    }
   };
 
   return (
     <TouchableOpacity
       style={[
         styles.button,
-        variantStyles[variant],
-        sizeStyles[size],
+        getVariantStyle(),
         fullWidth && styles.fullWidth,
-        (disabled || loading) && styles.disabled,
-        buttonStyle,
+        loading && styles.loading
       ]}
-      disabled={disabled || loading}
-      activeOpacity={0.8}
-      {...props}
+      onPress={onPress}
+      disabled={loading}
     >
       {loading ? (
-        <ActivityIndicator
-          size="small"
-          color={variant === 'outline' || variant === 'ghost' ? theme.colors.primary : theme.colors.background}
-        />
+        <ActivityIndicator color={variant === 'primary' ? '#000' : '#FFF'} />
       ) : (
-        <>
-          {icon && iconPosition === 'left' && icon}
-          <Text
-            style={[
-              styles.text,
-              textVariantStyles[variant],
-              textSizeStyles[size],
-              (disabled || loading) && styles.disabledText,
-              textStyle,
-              icon && (iconPosition === 'left' ? styles.textWithIconLeft : styles.textWithIconRight),
-            ]}
-          >
-            {title}
-          </Text>
-          {icon && iconPosition === 'right' && icon}
-        </>
+        <Text style={getTextStyle()}>{title}</Text>
       )}
     </TouchableOpacity>
   );
 };
 
-const useStyles = createThemedStyles((theme) => ({
+const useStyles = createStyles(() => ({
   button: {
-    flexDirection: 'row',
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: theme.borderRadius.md,
   },
-  // Variantes
   primary: {
     backgroundColor: theme.colors.primary,
   },
   secondary: {
     backgroundColor: theme.colors.secondary,
   },
-  outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: theme.colors.primary,
-  },
   ghost: {
     backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
-  danger: {
-    backgroundColor: theme.colors.error,
-  },
-  // Tailles
-  sizeSmall: {
-    paddingVertical: theme.spacing.xs,
-    paddingHorizontal: theme.spacing.sm,
-  },
-  sizeMedium: {
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-  },
-  sizeLarge: {
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
-  },
-  // Texte
-  text: {
-    fontWeight: theme.typography.fontWeights.medium,
-    textAlign: 'center',
-  },
-  // Texte par variante
   primaryText: {
-    color: 'white',
+    color: '#000',
+    fontWeight: theme.typography.weights.semibold,
   },
   secondaryText: {
-    color: 'white',
-  },
-  outlineText: {
-    color: theme.colors.primary,
+    color: '#FFF',
+    fontWeight: theme.typography.weights.semibold,
   },
   ghostText: {
-    color: theme.colors.primary,
+    color: theme.colors.text,
+    fontWeight: theme.typography.weights.semibold,
   },
-  dangerText: {
-    color: 'white',
-  },
-  // Texte par taille
-  textSmall: {
-    fontSize: theme.typography.fontSizes.sm,
-  },
-  textMedium: {
-    fontSize: theme.typography.fontSizes.md,
-  },
-  textLarge: {
-    fontSize: theme.typography.fontSizes.lg,
-  },
-  // États
-  disabled: {
-    opacity: 0.5,
-  },
-  disabledText: {
-    opacity: 0.8,
-  },
-  // Mise en page
   fullWidth: {
     width: '100%',
   },
-  textWithIconLeft: {
-    marginLeft: theme.spacing.xs,
-  },
-  textWithIconRight: {
-    marginRight: theme.spacing.xs,
+  loading: {
+    opacity: 0.7,
   },
 }));

@@ -1,18 +1,14 @@
 // app/(auth)/_layout.tsx
-import { FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
-import React from 'react';
-import { useTheme } from '../../src/utils/theme';
-import { useAuthViewModel } from '../../src/viewModels/useAuthViewModel';
+import { useAuth } from '../../src/hooks/useAuth';
+import { Ionicons } from '@expo/vector-icons';
+import { theme } from '../../src/theme';
 
-export default function TabLayout() {
-  const theme = useTheme();
-  const { currentUser } = useAuthViewModel();
+export default function AuthLayout() {
+  const { user, loading } = useAuth();
 
-  // Si l'utilisateur n'est pas connecté, rediriger vers la page de connexion
-  if (!currentUser) {
-    return <Redirect href="/(public)/login" />;
-  }
+  if (loading) return null;
+  if (!user) return <Redirect href="/(public)/login" />;
 
   return (
     <Tabs
@@ -20,20 +16,14 @@ export default function TabLayout() {
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textSecondary,
         tabBarStyle: {
-          backgroundColor: theme.colors.background,
+          backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.border,
-          paddingBottom: 5,
-          paddingTop: 5,
         },
         headerStyle: {
-          backgroundColor: theme.colors.background,
+          backgroundColor: theme.colors.surface,
           borderBottomColor: theme.colors.border,
-          borderBottomWidth: 1,
         },
         headerTintColor: theme.colors.text,
-        headerTitleStyle: {
-          fontWeight: '600',
-        },
       }}
     >
       <Tabs.Screen
@@ -41,81 +31,37 @@ export default function TabLayout() {
         options={{
           title: 'Accueil',
           tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="home" size={size} color={color} />
+            <Ionicons name="home" size={size} color={color} />
           ),
         }}
       />
-      
       <Tabs.Screen
-        name="services/index"
+        name="services"
         options={{
           title: 'Prestations',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="design-services" size={size} color={color} />
+            <Ionicons name="calendar" size={size} color={color} />
           ),
         }}
       />
-      
       <Tabs.Screen
-        name="applications/index"
+        name="applications"
         options={{
           title: 'Candidatures',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="file-text-o" size={size} color={color} />
+            <Ionicons name="document-text" size={size} color={color} />
           ),
         }}
       />
-      
-      <Tabs.Screen
-        name="messages/index"
-        options={{
-          title: 'Messages',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubble-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profil',
           tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="user" size={size} color={color} />
+            <Ionicons name="person" size={size} color={color} />
           ),
-        }}
-      />
-      
-      {/* Screens that don't have a tab but are part of this stack group */}
-      <Tabs.Screen
-        name="services/create"
-        options={{
-          title: 'Créer une prestation',
-          href: null,
-        }}
-      />
-      
-      <Tabs.Screen
-        name="services/[id]"
-        options={{
-          title: 'Détails de la prestation',
-          href: null,
-        }}
-      />
-      
-      <Tabs.Screen
-        name="applications/[id]"
-        options={{
-          title: 'Détails de la candidature',
-          href: null,
-        }}
-      />
-      
-      <Tabs.Screen
-        name="messages/[id]"
-        options={{
-          title: 'Conversation',
-          href: null,
         }}
       />
     </Tabs>
