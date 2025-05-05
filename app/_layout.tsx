@@ -1,9 +1,7 @@
 // app/_layout.tsx
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { Stack } from 'expo-router';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../src/lib/firebase';
 
 export default function RootLayout() {
   return (
@@ -20,6 +18,7 @@ export default function RootLayout() {
           },
         }}
       >
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(public)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       </Stack>

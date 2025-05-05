@@ -135,14 +135,14 @@ const useStyles = createStyles(() => ({
     padding: theme.spacing.lg,
   },
   title: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.bold,
+    fontSize: theme.typography.fontSizes.xl,
+    fontWeight: theme.typography.fontWeights.bold,
     color: theme.colors.text,
     marginBottom: theme.spacing.lg,
   },
   label: {
     color: theme.colors.text,
-    fontSize: theme.typography.sizes.sm,
+    fontSize: theme.typography.fontSizes.sm,
     marginBottom: theme.spacing.xs,
     marginTop: theme.spacing.md,
   },

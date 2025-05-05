@@ -73,12 +73,12 @@ const useStyles = createStyles(() => ({
     padding: theme.spacing.lg,
   },
   welcome: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.bold,
+    fontSize: theme.typography.fontSizes.xl,
+    fontWeight: theme.typography.fontWeights.bold,
     color: theme.colors.text,
   },
   role: {
-    fontSize: theme.typography.sizes.md,
+    fontSize: theme.typography.fontSizes.md,
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.xs,
   },
@@ -86,8 +86,8 @@ const useStyles = createStyles(() => ({
     padding: theme.spacing.lg,
   },
   sectionTitle: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.semibold,
+    fontSize: theme.typography.fontSizes.lg,
+    fontWeight: theme.typography.fontWeights.semibold,
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
   },

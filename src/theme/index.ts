@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 
 export const theme = {
   colors: {
-    primary: '#E4E4E7',      // Zinc 200
+    primary: '#FF6B6B',      // Orange coral - Couleur principale
     secondary: '#71717A',    // Zinc 500
     background: '#000000',   // Pure black
     surface: '#121212',      // Almost black surface
@@ -14,6 +14,7 @@ export const theme = {
     error: '#DC2626',       // Red 600
     success: '#16A34A',     // Green 600
     warning: '#D97706',     // Amber 600
+    accent: '#FF8C42',      // Orange accent pour les éléments interactifs
   },
   spacing: {
     xs: 4,
@@ -23,19 +24,29 @@ export const theme = {
     xl: 32,
   },
   typography: {
-    sizes: {
+    fontFamilies: {
+      logo: 'Poppins-Bold',
+      body: 'System',
+    },
+    fontSizes: {
       xs: 12,
       sm: 14,
       md: 16,
       lg: 18,
       xl: 24,
       '2xl': 32,
+      '3xl': 48,
     },
-    weights: {
+    fontWeights: {
       normal: '400',
       medium: '500',
       semibold: '600',
       bold: '700',
+    },
+    letterSpacing: {
+      logo: 0,
+      normal: 0.4,
+      wide: 0.8,
     },
   },
   borderRadius: {

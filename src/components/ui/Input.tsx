@@ -44,7 +44,7 @@ const useStyles = createStyles(() => ({
   },
   label: {
     color: theme.colors.text,
-    fontSize: theme.typography.sizes.sm,
+    fontSize: theme.typography.fontSizes.sm,
     marginBottom: theme.spacing.xs,
   },
   input: {
@@ -54,14 +54,14 @@ const useStyles = createStyles(() => ({
     borderRadius: theme.borderRadius.sm,
     padding: theme.spacing.sm,
     color: theme.colors.text,
-    fontSize: theme.typography.sizes.md,
+    fontSize: theme.typography.fontSizes.md,
   },
   inputError: {
     borderColor: theme.colors.error,
   },
   error: {
     color: theme.colors.error,
-    fontSize: theme.typography.sizes.xs,
+    fontSize: theme.typography.fontSizes.xs,
     marginTop: theme.spacing.xs,
   },
 }));

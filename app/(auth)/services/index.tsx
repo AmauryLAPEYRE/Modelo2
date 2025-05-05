@@ -57,8 +57,8 @@ const useStyles = createStyles(() => ({
     padding: theme.spacing.lg,
   },
   title: {
-    fontSize: theme.typography.sizes.xl,
-    fontWeight: theme.typography.weights.bold,
+    fontSize: theme.typography.fontSizes.xl,
+    fontWeight: theme.typography.fontWeights.bold,
     color: theme.colors.text,
   },
   loadingText: {

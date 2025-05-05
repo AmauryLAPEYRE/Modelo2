@@ -36,7 +36,7 @@ export default function RegisterScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Modelo</Text>
+        <Text style={styles.logoTitle}>modelo</Text>
         <Text style={styles.subtitle}>Créez votre compte</Text>
 
         <Input
@@ -107,21 +107,24 @@ const useStyles = createStyles(() => ({
     padding: theme.spacing.lg,
     justifyContent: 'center',
   },
-  title: {
-    fontSize: theme.typography.sizes['2xl'],
-    fontWeight: theme.typography.weights.bold,
+  logoTitle: {
+    fontSize: theme.typography.fontSizes['3xl'],
+    fontWeight: theme.typography.fontWeights.bold,
     color: theme.colors.text,
     marginBottom: theme.spacing.xs,
+    fontFamily: theme.typography.fontFamilies?.logo || 'System',
+    letterSpacing: theme.typography.letterSpacing?.logo || 0,
   },
   subtitle: {
-    fontSize: theme.typography.sizes.lg,
+    fontSize: theme.typography.fontSizes.lg,
     color: theme.colors.textSecondary,
     marginBottom: theme.spacing.xl,
   },
   label: {
     color: theme.colors.text,
-    fontSize: theme.typography.sizes.sm,
+    fontSize: theme.typography.fontSizes.sm,
     marginBottom: theme.spacing.xs,
+    marginTop: theme.spacing.md,
   },
   roleContainer: {
     flexDirection: 'row',
@@ -137,18 +140,18 @@ const useStyles = createStyles(() => ({
     alignItems: 'center',
   },
   roleButtonActive: {
-    borderColor: theme.colors.primary,
+    borderColor: theme.colors.primary, // Orange
     backgroundColor: theme.colors.surface,
   },
   roleText: {
     color: theme.colors.textSecondary,
   },
   roleTextActive: {
-    color: theme.colors.primary,
-    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.primary, // Orange
+    fontWeight: theme.typography.fontWeights.semibold,
   },
   link: {
-    color: theme.colors.primary,
+    color: theme.colors.primary, // Orange
     textAlign: 'center',
     marginTop: theme.spacing.lg,
   },

@@ -17,7 +17,7 @@ export const ApplicationCard = ({ application, onPress }: ApplicationCardProps) 
   const getStatusColor = () => {
     switch (application.status) {
       case 'pending':
-        return theme.colors.warning;
+        return theme.colors.primary; // Orange pour pending
       case 'accepted':
         return theme.colors.success;
       case 'rejected':
@@ -66,15 +66,15 @@ const useStyles = createStyles(() => ({
     marginBottom: theme.spacing.xs,
   },
   status: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold,
+    fontSize: theme.typography.fontSizes.md,
+    fontWeight: theme.typography.fontWeights.semibold,
   },
   date: {
     color: theme.colors.textSecondary,
-    fontSize: theme.typography.sizes.sm,
+    fontSize: theme.typography.fontSizes.sm,
   },
   message: {
     color: theme.colors.text,
-    fontSize: theme.typography.sizes.md,
+    fontSize: theme.typography.fontSizes.md,
   },
 }));

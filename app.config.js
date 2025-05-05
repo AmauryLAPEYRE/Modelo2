@@ -26,10 +26,13 @@ export default {
       },
       package: "com.modelo.app"
     },
-    extra: {
-      eas: {
-        projectId: "your-project-id"
-      }
-    }
+    plugins: [
+      [
+        "expo-font",
+        {
+          "assets": ["./assets/fonts/Poppins-Bold.ttf"]
+        }
+      ]
+    ]
   }
 };

@@ -75,7 +75,7 @@ const useStyles = createStyles(() => ({
     justifyContent: 'center',
   },
   primary: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: theme.colors.primary, // Orange
   },
   secondary: {
     backgroundColor: theme.colors.secondary,
@@ -83,19 +83,22 @@ const useStyles = createStyles(() => ({
   ghost: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: theme.colors.primary, // Orange border pour ghost
   },
   primaryText: {
     color: '#000',
-    fontWeight: theme.typography.weights.semibold,
+    fontWeight: theme.typography.fontWeights.semibold,
+    fontFamily: theme.typography.fontFamilies?.body || 'System',
   },
   secondaryText: {
     color: '#FFF',
-    fontWeight: theme.typography.weights.semibold,
+    fontWeight: theme.typography.fontWeights.semibold,
+    fontFamily: theme.typography.fontFamilies?.body || 'System',
   },
   ghostText: {
-    color: theme.colors.text,
-    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.primary, // Orange text pour ghost
+    fontWeight: theme.typography.fontWeights.semibold,
+    fontFamily: theme.typography.fontFamilies?.body || 'System',
   },
   fullWidth: {
     width: '100%',
