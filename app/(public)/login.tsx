@@ -4,9 +4,9 @@ import { View, Text, SafeAreaView, Alert, KeyboardAvoidingView, Platform } from 
 import { router } from 'expo-router';
 import { Button } from '../../src/components/ui/Button';
 import { Input } from '../../src/components/ui/Input';
+import { Logo } from '../../src/components/ui/Logo';
 import { useAuth } from '../../src/hooks/useAuth';
 import { createThemedStyles, useTheme } from '../../src/theme';
-import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -41,10 +41,8 @@ export default function LoginScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
           <View style={styles.logoContainer}>
-            <View style={styles.logoWrapper}>
-              <Ionicons name="person-outline" size={48} color={theme.colors.primary} />
-            </View>
-            <Text style={styles.logoTitle}>modelo</Text>
+            {/* Remplacer l'ancien logo par le nouveau */}
+            <Logo size="large" />
             <Text style={styles.subtitle}>Connectez-vous à votre compte</Text>
           </View>
 
@@ -122,29 +120,10 @@ const useStyles = createThemedStyles((theme) => ({
     alignItems: 'center',
     marginBottom: theme.spacing['3xl'],
   },
-  logoWrapper: {
-    width: 96,
-    height: 96,
-    borderRadius: theme.borderRadius.full,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 2,
-    borderColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: theme.spacing.lg,
-  },
-  logoTitle: {
-    fontSize: theme.typography.fontSizes['3xl'],
-    fontWeight: theme.typography.fontWeights.bold,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm,
-    fontFamily: theme.typography.fontFamilies?.logo || 'System',
-    letterSpacing: theme.typography.letterSpacing?.wide || 0,
-  },
   subtitle: {
     fontSize: theme.typography.fontSizes.lg,
     color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.xl,
+    marginTop: theme.spacing.lg,
   },
   form: {
     gap: theme.spacing.lg,

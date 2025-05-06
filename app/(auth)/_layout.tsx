@@ -25,6 +25,9 @@ export default function AuthLayout() {
   return (
     <Tabs
       screenOptions={{
+        // Suppression des headers
+        headerShown: false,
+        
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textTertiary,
         tabBarStyle: {
@@ -34,12 +37,6 @@ export default function AuthLayout() {
           paddingBottom: 8,
           paddingTop: 8,
         },
-        headerStyle: {
-          backgroundColor: theme.colors.surface,
-          borderBottomColor: theme.colors.border,
-        },
-        headerTintColor: theme.colors.text,
-        headerShadowVisible: false,
       }}
     >
       <Tabs.Screen
@@ -53,19 +50,12 @@ export default function AuthLayout() {
               color={color} 
             />
           ),
-          headerTitle: 'modelo',
-          headerTitleStyle: {
-            fontFamily: theme.typography.fontFamilies?.logo || 'System',
-            fontSize: theme.typography.fontSizes.xl,
-            fontWeight: theme.typography.fontWeights.bold,
-          },
         }}
       />
       <Tabs.Screen
         name="services"
         options={{
           title: 'Services',
-          headerShown: false,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons 
               name={focused ? 'calendar' : 'calendar-outline'} 
@@ -85,8 +75,6 @@ export default function AuthLayout() {
         name="applications"
         options={{
           title: 'Candidatures',
-          headerShown: false,
-          headerTitle: 'Candidatures',
           tabBarLabel: 'Candidatures',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons 

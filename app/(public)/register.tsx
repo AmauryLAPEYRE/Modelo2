@@ -4,6 +4,7 @@ import { View, Text, SafeAreaView, Alert, ScrollView, KeyboardAvoidingView, Plat
 import { router } from 'expo-router';
 import { Button } from '../../src/components/ui/Button';
 import { Input } from '../../src/components/ui/Input';
+import { Logo } from '../../src/components/ui/Logo';
 import { useAuth } from '../../src/hooks/useAuth';
 import { createThemedStyles, useTheme } from '../../src/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +14,7 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState<'model' | 'professional' | ''>('');
+  const [professionalType, setProfessionalType] = useState<'coiffeur' | 'maquilleur' | 'photographe' | 'estheticienne' | ''>('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const theme = useTheme();
@@ -24,10 +26,28 @@ export default function RegisterScreen() {
       return;
     }
 
+    // Vérifier si le type professionnel est sélectionné si l'utilisateur est un professionnel
+    if (role === 'professional' && !professionalType) {
+      Alert.alert('Erreur', 'Veuillez sélectionner votre type de profession');
+      return;
+    }
+
     setLoading(true);
     try {
-      await register(email, password, name, role);
-      router.replace('/(auth)/home');
+      await register(
+        email, 
+        password, 
+        name, 
+        role, 
+        role === 'professional' ? professionalType : undefined
+      );
+      
+      // Si c'est un modèle, rediriger vers le formulaire de profil complet
+      if (role === 'model') {
+        router.replace('/(auth)/profile/complete');
+      } else {
+        router.replace('/(auth)/home');
+      }
     } catch (error) {
       Alert.alert('Erreur', 'Une erreur est survenue');
     } finally {
@@ -44,13 +64,13 @@ export default function RegisterScreen() {
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.content}>
             <View style={styles.header}>
-              <Text style={styles.logoTitle}>modelo</Text>
+              <Logo size="medium" />
               <Text style={styles.subtitle}>Créez votre compte professionnel</Text>
             </View>
 
             <View style={styles.form}>
               <Input
-                label="Nom"
+                label="Nom complet"
                 value={name}
                 onChangeText={setName}
                 placeholder="Votre nom"
@@ -83,9 +103,12 @@ export default function RegisterScreen() {
                 <View style={styles.roleContainer}>
                   <Button
                     title="Modèle"
-                    onPress={() => setRole('model')}
+                    onPress={() => {
+                      setRole('model');
+                      setProfessionalType(''); // Réinitialiser le type professionnel
+                    }}
                     variant={role === 'model' ? 'primary' : 'outline'}
-                    fullWidth
+                    style={styles.roleButton}
                     icon="person-outline"
                   />
                   
@@ -93,11 +116,60 @@ export default function RegisterScreen() {
                     title="Professionnel"
                     onPress={() => setRole('professional')}
                     variant={role === 'professional' ? 'primary' : 'outline'}
-                    fullWidth
+                    style={styles.roleButton}
                     icon="briefcase-outline"
                   />
                 </View>
               </View>
+
+              {/* Afficher les options de type professionnel si le rôle est professionnel */}
+              {role === 'professional' && (
+                <View style={styles.professionalTypeSection}>
+                  <Text style={styles.roleLabel}>Quelle est votre spécialité ?</Text>
+                  <View style={styles.professionalTypeContainer}>
+                    {[
+                      { value: 'coiffeur', label: 'Coiffeur', icon: 'cut' },
+                      { value: 'maquilleur', label: 'Maquilleur', icon: 'color-palette' },
+                      { value: 'photographe', label: 'Photographe', icon: 'camera' },
+                      { value: 'estheticienne', label: 'Esthéticienne', icon: 'flower' }
+                    ].map(type => (
+                      <TouchableOpacity
+                        key={type.value}
+                        style={[
+                          styles.professionalTypeItem,
+                          professionalType === type.value && styles.professionalTypeItemActive
+                        ]}
+                        onPress={() => setProfessionalType(type.value as any)}
+                      >
+                        <Ionicons 
+                          name={type.icon as keyof typeof Ionicons.glyphMap} 
+                          size={24} 
+                          color={professionalType === type.value ? 'white' : theme.colors.primary} 
+                        />
+                        <Text 
+                          style={[
+                            styles.professionalTypeText,
+                            professionalType === type.value && styles.professionalTypeTextActive
+                          ]}
+                        >
+                          {type.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {/* Note informative pour les modèles */}
+              {role === 'model' && (
+                <View style={styles.infoBox}>
+                  <Ionicons name="information-circle" size={24} color={theme.colors.primary} />
+                  <Text style={styles.infoText}>
+                    Après votre inscription, vous serez invité à compléter votre profil avec des informations 
+                    supplémentaires pour augmenter vos chances d'être sélectionné(e).
+                  </Text>
+                </View>
+              )}
 
               <Button
                 title="S'inscrire"
@@ -105,7 +177,7 @@ export default function RegisterScreen() {
                 loading={loading}
                 fullWidth
                 size="lg"
-                disabled={!email || !password || !name || !role}
+                disabled={!email || !password || !name || !role || (role === 'professional' && !professionalType)}
               />
 
               <Text style={styles.loginLink}>
@@ -146,18 +218,11 @@ const useStyles = createThemedStyles((theme) => ({
     marginBottom: theme.spacing.xl,
     marginTop: theme.spacing.xl,
   },
-  logoTitle: {
-    fontSize: theme.typography.fontSizes['3xl'],
-    fontWeight: theme.typography.fontWeights.bold,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm,
-    fontFamily: theme.typography.fontFamilies?.logo || 'System',
-    letterSpacing: theme.typography.letterSpacing?.wide || 0,
-  },
   subtitle: {
     fontSize: theme.typography.fontSizes.lg,
     color: theme.colors.textSecondary,
     textAlign: 'center',
+    marginTop: theme.spacing.md,
   },
   form: {
     gap: theme.spacing.lg,
@@ -174,7 +239,61 @@ const useStyles = createThemedStyles((theme) => ({
   },
   roleContainer: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
     gap: theme.spacing.sm,
+  },
+  roleButton: {
+    flex: 1,
+    minWidth: '48%',
+    maxWidth: '48%',
+  },
+  professionalTypeSection: {
+    marginBottom: theme.spacing.md,
+  },
+  professionalTypeContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
+  },
+  professionalTypeItem: {
+    width: '48%',
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    alignItems: 'center',
+    marginBottom: theme.spacing.sm,
+  },
+  professionalTypeItemActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  professionalTypeText: {
+    color: theme.colors.primary,
+    marginTop: theme.spacing.xs,
+    fontSize: theme.typography.fontSizes.sm,
+    fontWeight: theme.typography.fontWeights.medium,
+    textAlign: 'center',
+  },
+  professionalTypeTextActive: {
+    color: 'white',
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: `${theme.colors.primary}10`,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  infoText: {
+    flex: 1,
+    color: theme.colors.text,
+    fontSize: theme.typography.fontSizes.sm,
   },
   loginLink: {
     color: theme.colors.textSecondary,

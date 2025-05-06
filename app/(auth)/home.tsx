@@ -17,8 +17,15 @@ export default function HomeScreen() {
   const theme = useTheme();
   const styles = useStyles();
 
-  const recentServices = services.slice(0, 5);
-  const recentApplications = applications.slice(0, 5);
+  // Filtrer uniquement les services actifs (publiés)
+  const activeServices = services.filter(service => service.status === 'published');
+  
+  // Filtrer uniquement les candidatures en attente
+  const pendingApplications = applications.filter(app => app.status === 'pending');
+  
+  // Sélectionner les services et candidatures les plus récents pour l'affichage
+  const recentServices = activeServices.slice(0, 5);
+  const recentApplications = pendingApplications.slice(0, 5);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -33,21 +40,31 @@ export default function HomeScreen() {
               </Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.profileButton}>
+          <TouchableOpacity style={styles.profileButton} onPress={() => router.push('/(auth)/profile')}>
             <Ionicons name="person-circle-outline" size={32} color={theme.colors.text} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.stats}>
-          <TouchableOpacity style={styles.statCard}>
+          <TouchableOpacity 
+            style={styles.statCard}
+            onPress={() => router.push('/(auth)/services')}
+          >
             <Ionicons name="briefcase-outline" size={24} color={theme.colors.primary} />
-            <Text style={styles.statNumber}>{services.length}</Text>
+            <Text style={styles.statNumber}>{activeServices.length}</Text>
             <Text style={styles.statLabel}>Services actifs</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.statCard}>
+          <TouchableOpacity 
+            style={styles.statCard}
+            onPress={() => router.push('/(auth)/applications')}
+          >
             <Ionicons name="person-outline" size={24} color={theme.colors.primary} />
-            <Text style={styles.statNumber}>{applications.length}</Text>
-            <Text style={styles.statLabel}>Candidatures</Text>
+            <Text style={styles.statNumber}>{pendingApplications.length}</Text>
+            <Text style={styles.statLabel}>
+              {user?.role === 'model' 
+                ? 'Candidatures' 
+                : 'En attente'}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -82,7 +99,9 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>
-              {user?.role === 'model' ? 'Mes candidatures' : 'Candidatures reçues'}
+              {user?.role === 'model' 
+                ? 'Mes candidatures' 
+                : 'Candidatures en attente'}
             </Text>
             <TouchableOpacity onPress={() => router.push('/(auth)/applications')}>
               <Text style={styles.seeAll}>Voir tout</Text>
@@ -104,7 +123,11 @@ export default function HomeScreen() {
           ) : (
             <View style={styles.empty}>
               <Ionicons name="document-text-outline" size={48} color={theme.colors.textSecondary} />
-              <Text style={styles.emptyText}>Aucune candidature</Text>
+              <Text style={styles.emptyText}>
+                {user?.role === 'model' 
+                  ? 'Aucune candidature' 
+                  : 'Aucune candidature en attente'}
+              </Text>
             </View>
           )}
         </View>

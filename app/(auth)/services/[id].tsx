@@ -1,78 +1,105 @@
 // app/(auth)/services/[id].tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, SafeAreaView, Alert } from 'react-native';
+import { View, Text, ScrollView, SafeAreaView, Alert, TouchableOpacity } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useServices } from '../../../src/hooks/useServices';
-import { useApplications, checkIfAlreadyApplied, getExistingApplication } from '../../../src/hooks/useApplications';
+import { useApplications } from '../../../src/hooks/useApplications';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { Button } from '../../../src/components/ui/Button';
 import { Service } from '../../../src/types/models';
 import { createThemedStyles, useTheme } from '../../../src/theme';
 import { formatDate, formatDuration, formatCurrency } from '../../../src/utils/formatters';
 import { Ionicons } from '@expo/vector-icons';
-import { Application } from '../../../src/types/models';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../../../src/lib/firebase';
+import { formatProfessionalType, getProfessionalTypeIcon } from '../../../src/utils/professionalType';
 
 export default function ServiceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getService, deleteService } = useServices();
-  const { applyToService, applications } = useApplications();
+  const { applyToService } = useApplications();
   const { user } = useAuth();
   const theme = useTheme();
   const [service, setService] = useState<Service | null>(null);
+  const [professionalName, setProfessionalName] = useState('');
+  const [professionalEmail, setProfessionalEmail] = useState('');
+  const [professionalType, setProfessionalType] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [existingApplication, setExistingApplication] = useState<Application | null>(null);
-  const [checkingApplication, setCheckingApplication] = useState(true);
+  const [hasApplied, setHasApplied] = useState(false);
   const styles = useStyles();
 
+  // Charger les détails du service et du professionnel
   useEffect(() => {
     const fetchService = async () => {
       if (id) {
-        const serviceData = await getService(id);
-        setService(serviceData);
-        setLoading(false);
+        try {
+          const serviceData = await getService(id);
+          setService(serviceData);
+          
+          // Fetch professional info
+          if (serviceData) {
+            try {
+              const professionalDoc = await getDoc(doc(db, 'users', serviceData.professionalId));
+              if (professionalDoc.exists()) {
+                const data = professionalDoc.data();
+                setProfessionalName(data.name || '');
+                setProfessionalEmail(data.email || '');
+                setProfessionalType(data.professionalType);
+              }
+            } catch (error) {
+              console.error("Erreur lors de la récupération des informations du professionnel:", error);
+            }
+          }
+        } catch (error) {
+          console.error("Erreur lors de la récupération du service:", error);
+        } finally {
+          setLoading(false);
+        }
       }
     };
+    
     fetchService();
   }, [id]);
 
-  // Vérifiez si l'utilisateur a déjà postulé au chargement et à chaque changement des applications
+  // Vérifier spécifiquement si l'utilisateur a déjà postulé à ce service
   useEffect(() => {
-    const checkApplication = async () => {
-      if (id && user?.id) {
-        setCheckingApplication(true);
-        const existing = await getExistingApplication(id, user.id);
-        setExistingApplication(existing);
-        setCheckingApplication(false);
+    const checkApplicationStatus = async () => {
+      if (user?.role === 'model' && service && user) {
+        try {
+          // Vérifier spécifiquement les candidatures de ce modèle pour ce service
+          const applicationsRef = collection(db, 'applications');
+          const q = query(
+            applicationsRef, 
+            where('serviceId', '==', service.id),
+            where('modelId', '==', user.id)
+          );
+          const querySnapshot = await getDocs(q);
+          
+          // Si on trouve une candidature, l'utilisateur a déjà postulé
+          setHasApplied(!querySnapshot.empty);
+        } catch (error) {
+          console.error("Erreur lors de la vérification du statut de candidature:", error);
+        }
       }
     };
-    checkApplication();
-  }, [id, user?.id, applications]);
+    
+    checkApplicationStatus();
+  }, [user, service]);
 
-  const hasApplied = !!existingApplication;
   const isOwner = service?.professionalId === user?.id;
 
   const handleApply = async () => {
     if (!service || !user) return;
 
-    // Vérification supplémentaire avant l'envoi
-    if (hasApplied) {
-      Alert.alert('Information', 'Vous avez déjà postulé à cette prestation');
-      return;
-    }
-
     setApplying(true);
     try {
       await applyToService(service.id, user.id);
+      setHasApplied(true); // Mettre à jour l'état local immédiatement
       Alert.alert('Succès', 'Votre candidature a été envoyée');
-      
-      // Rechargez la candidature existante
-      const newApplication = await getExistingApplication(service.id, user.id);
-      setExistingApplication(newApplication);
-    } catch (error: any) {
-      const errorMessage = error.message || 'Une erreur est survenue';
-      Alert.alert('Erreur', errorMessage);
+    } catch (error) {
+      Alert.alert('Erreur', 'Une erreur est survenue');
     } finally {
       setApplying(false);
     }
@@ -126,7 +153,7 @@ export default function ServiceDetailScreen() {
     }
   };
 
-  if (loading || checkingApplication) {
+  if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loading}>
@@ -151,8 +178,16 @@ export default function ServiceDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header avec bouton retour */}
+      <View style={styles.navigationHeader}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+        </TouchableOpacity>
+      </View>
+      
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
+          {/* En-tête avec titre et prix */}
           <View style={styles.header}>
             <Text style={styles.title}>{service.title}</Text>
             {compensation && (
@@ -160,13 +195,45 @@ export default function ServiceDetailScreen() {
                 {compensation.text}
               </Text>
             )}
+            <View style={styles.statusBadge}>
+              <Text style={styles.statusText}>
+                {service.status === 'published' ? 'Actif' : 
+                 service.status === 'completed' ? 'Terminé' : 'Annulé'}
+              </Text>
+            </View>
           </View>
           
+          {/* Information du professionnel */}
+          <View style={styles.professionalCard}>
+            <View style={styles.professionalHeader}>
+              <Text style={styles.sectionTitle}>Professionnel</Text>
+            </View>
+            
+            <View style={styles.professionalInfo}>
+              <View style={styles.professionalIconContainer}>
+                <Ionicons 
+                  name={getProfessionalTypeIcon(professionalType) as keyof typeof Ionicons.glyphMap} 
+                  size={36} 
+                  color={theme.colors.primary} 
+                />
+              </View>
+              <View style={styles.professionalDetails}>
+                <Text style={styles.professionalName}>{professionalName}</Text>
+                <Text style={styles.professionalType}>
+                  {professionalType ? formatProfessionalType(professionalType) : 'Professionnel'}
+                </Text>
+                <Text style={styles.professionalEmail}>{professionalEmail}</Text>
+              </View>
+            </View>
+          </View>
+          
+          {/* Description */}
           <View style={styles.card}>
             <Text style={styles.descriptionTitle}>Description</Text>
             <Text style={styles.description}>{service.description}</Text>
           </View>
           
+          {/* Détails de la prestation */}
           <View style={styles.detailsCard}>
             <Text style={styles.sectionTitle}>Détails de la prestation</Text>
             
@@ -193,47 +260,76 @@ export default function ServiceDetailScreen() {
                 <Text style={styles.detailValue}>{service.location}</Text>
               </View>
             </View>
+            
+            <View style={styles.detailRow}>
+              <Ionicons name="cash" size={20} color={theme.colors.primary} />
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Compensation</Text>
+                <Text style={[styles.detailValue, { color: compensation?.style.color }]}>
+                  {compensation?.text} 
+                  {service.compensation.type === 'tfp' && (
+                    <Text style={styles.tfpExplanation}> (Time for Print: échange de services)</Text>
+                  )}
+                </Text>
+              </View>
+            </View>
           </View>
-
-          {user?.role === 'model' && !isOwner && !hasApplied && (
-            <Button
-              title="Postuler à cette prestation"
-              onPress={handleApply}
-              loading={applying}
-              fullWidth
-              size="lg"
-              icon="checkmark-circle"
-            />
-          )}
-
-          {hasApplied && existingApplication && (
-            <View style={styles.appliedBanner}>
-              <Ionicons name="checkmark-circle" size={24} color={theme.colors.primary} />
-              <Text style={styles.appliedText}>
-                Candidature envoyée le {formatDate(existingApplication.createdAt)}
-              </Text>
+          
+          {/* Informations pour les modèles */}
+          {user?.role === 'model' && (
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Informations pour les modèles</Text>
+              <View style={styles.infoRow}>
+                <Ionicons name="information-circle" size={20} color={theme.colors.primary} />
+                <Text style={styles.infoText}>
+                  La prestation est organisée par un {formatProfessionalType(professionalType || '')}.
+                </Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
+                <Text style={styles.infoText}>
+                  Durée de la prestation : {formatDuration(service.duration)}.
+                </Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Ionicons name="alert-circle" size={20} color={theme.colors.primary} />
+                <Text style={styles.infoText}>
+                  Soyez ponctuel(le) à l'adresse indiquée.
+                </Text>
+              </View>
+              {service.compensation.type === 'tfp' && (
+                <View style={styles.infoRow}>
+                  <Ionicons name="images" size={20} color={theme.colors.primary} />
+                  <Text style={styles.infoText}>
+                    TFP : Vous recevrez des photos en échange de votre prestation.
+                  </Text>
+                </View>
+              )}
             </View>
           )}
 
-          {hasApplied && existingApplication && existingApplication.status !== 'pending' && (
-            <View style={[
-              styles.statusBanner,
-              { borderColor: existingApplication.status === 'accepted' ? theme.colors.success : theme.colors.error }
-            ]}>
-              <Ionicons 
-                name={existingApplication.status === 'accepted' ? 'thumbs-up' : 'thumbs-down'} 
-                size={24} 
-                color={existingApplication.status === 'accepted' ? theme.colors.success : theme.colors.error} 
-              />
-              <Text style={[
-                styles.statusText,
-                { color: existingApplication.status === 'accepted' ? theme.colors.success : theme.colors.error }
-              ]}>
-                Candidature {existingApplication.status === 'accepted' ? 'acceptée' : 'refusée'}
-              </Text>
-            </View>
+          {/* Actions pour les modèles */}
+          {user?.role === 'model' && !isOwner && (
+            <>
+              {!hasApplied ? (
+                <Button
+                  title="Postuler à cette prestation"
+                  onPress={handleApply}
+                  loading={applying}
+                  fullWidth
+                  size="lg"
+                  icon="checkmark-circle"
+                />
+              ) : (
+                <View style={styles.appliedBanner}>
+                  <Ionicons name="checkmark-circle" size={24} color={theme.colors.primary} />
+                  <Text style={styles.appliedText}>Vous avez déjà postulé à cette prestation</Text>
+                </View>
+              )}
+            </>
           )}
 
+          {/* Actions pour les propriétaires */}
           {isOwner && (
             <View style={styles.ownerActions}>
               <View style={styles.actionButtons}>
@@ -274,17 +370,44 @@ const useStyles = createThemedStyles((theme) => ({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  navigationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
+    paddingBottom: theme.spacing.sm,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
   content: {
     padding: theme.spacing.lg,
+    paddingTop: 0,
   },
   header: {
-    marginBottom: theme.spacing.xl,
+    marginBottom: theme.spacing.md,
   },
   title: {
     fontSize: theme.typography.fontSizes['3xl'],
     fontWeight: theme.typography.fontWeights.bold,
     color: theme.colors.text,
     marginBottom: theme.spacing.sm,
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: theme.colors.success,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borderRadius.full,
+    marginTop: theme.spacing.xs,
+  },
+  statusText: {
+    color: '#FFFFFF',
+    fontSize: theme.typography.fontSizes.sm,
+    fontWeight: theme.typography.fontWeights.medium,
   },
   compensation: {
     fontSize: theme.typography.fontSizes['2xl'],
@@ -298,6 +421,49 @@ const useStyles = createThemedStyles((theme) => ({
   },
   compensationTfp: {
     color: theme.colors.primary,
+  },
+  professionalCard: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  professionalHeader: {
+    marginBottom: theme.spacing.sm,
+  },
+  professionalInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  professionalIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: theme.borderRadius.full,
+    backgroundColor: `${theme.colors.primary}20`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: theme.spacing.md,
+  },
+  professionalDetails: {
+    flex: 1,
+  },
+  professionalName: {
+    fontSize: theme.typography.fontSizes.lg,
+    fontWeight: theme.typography.fontWeights.bold,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.xs,
+  },
+  professionalType: {
+    fontSize: theme.typography.fontSizes.md,
+    color: theme.colors.primary,
+    fontWeight: theme.typography.fontWeights.medium,
+    marginBottom: theme.spacing.xs,
+  },
+  professionalEmail: {
+    fontSize: theme.typography.fontSizes.sm,
+    color: theme.colors.textSecondary,
   },
   card: {
     backgroundColor: theme.colors.card,
@@ -349,6 +515,22 @@ const useStyles = createThemedStyles((theme) => ({
     color: theme.colors.text,
     fontWeight: theme.typography.fontWeights.medium,
   },
+  tfpExplanation: {
+    fontSize: theme.typography.fontSizes.sm,
+    color: theme.colors.textSecondary,
+    fontWeight: theme.typography.fontWeights.normal,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: theme.spacing.sm,
+  },
+  infoText: {
+    fontSize: theme.typography.fontSizes.md,
+    color: theme.colors.textSecondary,
+    marginLeft: theme.spacing.sm,
+    flex: 1,
+  },
   appliedBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -357,24 +539,10 @@ const useStyles = createThemedStyles((theme) => ({
     borderColor: theme.colors.primary,
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.md,
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.xl,
   },
   appliedText: {
     color: theme.colors.primary,
-    fontSize: theme.typography.fontSizes.lg,
-    fontWeight: theme.typography.fontWeights.semibold,
-    marginLeft: theme.spacing.sm,
-  },
-  statusBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-  },
-  statusText: {
     fontSize: theme.typography.fontSizes.lg,
     fontWeight: theme.typography.fontWeights.semibold,
     marginLeft: theme.spacing.sm,

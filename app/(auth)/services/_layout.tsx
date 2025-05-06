@@ -3,36 +3,20 @@ import { Stack } from 'expo-router';
 
 export default function ServicesLayout() {
   return (
-    <Stack initialRouteName="index">
-      <Stack.Screen 
-        name="index" 
-        options={{ 
-          title: 'Prestations',
-          headerShown: true,
-        }} 
-      />
-      <Stack.Screen 
-        name="[id]" 
-        options={{ 
-          title: 'Détails',
-          headerShown: true,
-          presentation: 'modal',
-        }} 
-      />
-      <Stack.Screen 
-        name="create" 
-        options={{ 
-          title: 'Créer une prestation',
-          headerShown: true,
-          presentation: 'modal',
-        }} 
-      />
-      <Stack.Screen 
-        name="edit" 
-        options={{ 
-          headerShown: false, // Edit a son propre layout
-        }} 
-      />
+    <Stack
+      screenOptions={{
+        // Suppression du header par défaut pour toutes les routes "services/*"
+        headerShown: false,
+        // Styles complémentaires pour maintenir l'apparence générale
+        contentStyle: {
+          backgroundColor: '#000000',
+        }
+      }}
+    >
+      <Stack.Screen name="index" />
+      <Stack.Screen name="[id]" />
+      <Stack.Screen name="create" />
+      <Stack.Screen name="edit" />
     </Stack>
   );
 }

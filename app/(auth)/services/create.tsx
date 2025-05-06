@@ -1,17 +1,21 @@
 // app/(auth)/services/create.tsx
 import React, { useState } from 'react';
-import { View, Text, ScrollView, SafeAreaView, Alert } from 'react-native';
+import { View, Text, ScrollView, SafeAreaView, Alert, TouchableOpacity, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { useServices } from '../../../src/hooks/useServices';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { Button } from '../../../src/components/ui/Button';
 import { Input } from '../../../src/components/ui/Input';
 import { createThemedStyles, useTheme } from '../../../src/theme';
+import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function CreateServiceScreen() {
   const { createService } = useServices();
   const { user } = useAuth();
   const theme = useTheme();
+  
+  // États pour les champs du formulaire
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
@@ -19,7 +23,28 @@ export default function CreateServiceScreen() {
   const [compensationType, setCompensationType] = useState<'free' | 'paid' | 'tfp'>('free');
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // États pour le sélecteur de date
+  const [date, setDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
   const styles = useStyles();
+
+  // Fonction pour formater la date
+  const formatDate = (date: Date): string => {
+    return date.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
+  // Gestion du changement de date
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    const currentDate = selectedDate || date;
+    setShowDatePicker(Platform.OS === 'ios');
+    setDate(currentDate);
+  };
 
   const handleSubmit = async () => {
     if (!title || !description || !location || !duration) {
@@ -38,7 +63,7 @@ export default function CreateServiceScreen() {
         title,
         description,
         professionalId: user.id,
-        date: new Date(),
+        date: date, // Utilisation de la date sélectionnée
         duration: parseInt(duration),
         compensation: {
           type: compensationType,
@@ -61,10 +86,18 @@ export default function CreateServiceScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header personnalisé avec bouton retour */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Nouvelle prestation</Text>
+        <View style={{ width: 30 }} />
+      </View>
+      
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Nouvelle prestation</Text>
+          <View style={styles.headerSection}>
             <Text style={styles.subtitle}>Définissez les détails de votre service</Text>
           </View>
 
@@ -94,6 +127,30 @@ export default function CreateServiceScreen() {
               placeholder="Ex: Studio Paris 10ème"
               icon="location"
             />
+
+            {/* Sélecteur de date */}
+            <View style={styles.dateSection}>
+              <Text style={styles.label}>Date de la prestation</Text>
+              <TouchableOpacity 
+                style={styles.dateSelector}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Ionicons name="calendar" size={20} color={theme.colors.primary} />
+                <Text style={styles.dateText}>{formatDate(date)}</Text>
+                <Ionicons name="chevron-down" size={16} color={theme.colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {showDatePicker && (
+              <DateTimePicker
+                value={date}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={onDateChange}
+                minimumDate={new Date()}
+                style={styles.datePicker}
+              />
+            )}
 
             <Input
               label="Durée (minutes)"
@@ -159,21 +216,35 @@ const useStyles = createThemedStyles((theme) => ({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
+    paddingBottom: theme.spacing.md,
+  },
+  backButton: {
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: theme.typography.fontSizes.xl,
+    fontWeight: theme.typography.fontWeights.bold,
+    color: theme.colors.text,
+  },
   content: {
     padding: theme.spacing.lg,
   },
-  header: {
+  headerSection: {
     marginBottom: theme.spacing.xl,
-  },
-  title: {
-    fontSize: theme.typography.fontSizes['2xl'],
-    fontWeight: theme.typography.fontWeights.bold,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.xs,
   },
   subtitle: {
     fontSize: theme.typography.fontSizes.md,
     color: theme.colors.textSecondary,
+    textAlign: 'center',
   },
   form: {
     gap: theme.spacing.lg,
@@ -181,10 +252,35 @@ const useStyles = createThemedStyles((theme) => ({
   compensationSection: {
     gap: theme.spacing.sm,
   },
+  dateSection: {
+    gap: theme.spacing.sm,
+  },
   label: {
     color: theme.colors.text,
     fontSize: theme.typography.fontSizes.sm,
     fontWeight: theme.typography.fontWeights.medium,
+  },
+  dateSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.borderRadius.lg,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    minHeight: 48,
+    gap: theme.spacing.sm,
+  },
+  dateText: {
+    color: theme.colors.text,
+    fontSize: theme.typography.fontSizes.md,
+    flex: 1,
+  },
+  datePicker: {
+    marginTop: -10,
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.lg,
   },
   compensationContainer: {
     flexDirection: 'row',

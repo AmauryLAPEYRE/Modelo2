@@ -1,4 +1,5 @@
 // app/(auth)/profile.tsx
+// Mise à jour pour afficher le type de professionnel
 import React, { useEffect, useState } from 'react';
 import { View, Text, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
@@ -8,6 +9,34 @@ import { useApplications } from '../../src/hooks/useApplications';
 import { Button } from '../../src/components/ui/Button';
 import { createThemedStyles, useTheme } from '../../src/theme';
 import { Ionicons } from '@expo/vector-icons';
+
+// Fonction pour formater le type de professionnel
+const formatProfessionalType = (type?: string): string => {
+  if (!type) return '';
+  
+  // Première lettre en majuscule
+  return type.charAt(0).toUpperCase() + type.slice(1);
+};
+
+// Fonction pour obtenir l'icône correspondant au type de professionnel
+const getProfessionalTypeIcon = (type?: string): keyof typeof Ionicons.glyphMap => {
+  if (!type) return 'briefcase';
+  
+  switch (type) {
+    case 'coiffeur':
+      return 'cut';
+    case 'maquilleur':
+      return 'color-palette';
+    case 'photographe':
+      return 'camera';
+    case 'estheticienne':
+      return 'flower';
+    default:
+      return 'briefcase';
+  }
+};
+
+// Le reste du code reste le même, mais nous ajoutons l'affichage du type de professionnel
 
 interface ProfileStats {
   userServices: number;
@@ -41,8 +70,8 @@ export default function ProfileScreen() {
       if (user.role === 'model') {
         userApplications = applications.length;
       } else if (user.role === 'professional') {
-        // Pour les pros, on compte les candidatures reçues
-        userApplications = applications.length;
+        // Pour les pros, on compte uniquement les candidatures en attente
+        userApplications = applications.filter(app => app.status === 'pending').length;
       }
 
       // TODO: Récupérer les vraies notes depuis Firebase
@@ -123,7 +152,7 @@ export default function ProfileScreen() {
           : 'Aucune évaluation'
       },
       {
-        label: 'Candidatures reçues',
+        label: 'En attente',
         value: profileStats.userApplications.toString(),
       },
     ];
@@ -149,15 +178,31 @@ export default function ProfileScreen() {
           <Text style={styles.name}>{user?.name || 'Utilisateur'}</Text>
           <Text style={styles.email}>{user?.email || ''}</Text>
           
-          <View style={styles.roleBadge}>
-            <Ionicons 
-              name={user?.role === 'model' ? 'person' : 'briefcase'} 
-              size={16} 
-              color={theme.colors.primary} 
-            />
-            <Text style={styles.roleText}>
-              {user?.role === 'model' ? 'Modèle' : 'Professionnel'}
-            </Text>
+          <View style={styles.roleContainer}>
+            <View style={styles.roleBadge}>
+              <Ionicons 
+                name={user?.role === 'model' ? 'person' : 'briefcase'} 
+                size={16} 
+                color={theme.colors.primary} 
+              />
+              <Text style={styles.roleText}>
+                {user?.role === 'model' ? 'Modèle' : 'Professionnel'}
+              </Text>
+            </View>
+            
+            {/* Afficher le type de professionnel si l'utilisateur est un professionnel */}
+            {user?.role === 'professional' && user?.professionalType && (
+              <View style={styles.professionalTypeBadge}>
+                <Ionicons 
+                  name={getProfessionalTypeIcon(user.professionalType)} 
+                  size={16} 
+                  color="#fff" 
+                />
+                <Text style={styles.professionalTypeText}>
+                  {formatProfessionalType(user.professionalType)}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -266,6 +311,11 @@ const useStyles = createThemedStyles((theme) => ({
     color: theme.colors.textSecondary,
     marginBottom: theme.spacing.md,
   },
+  roleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
   roleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -279,6 +329,20 @@ const useStyles = createThemedStyles((theme) => ({
   },
   roleText: {
     color: theme.colors.primary,
+    fontSize: theme.typography.fontSizes.sm,
+    fontWeight: theme.typography.fontWeights.medium,
+  },
+  professionalTypeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.full,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    gap: theme.spacing.xs,
+  },
+  professionalTypeText: {
+    color: '#fff',
     fontSize: theme.typography.fontSizes.sm,
     fontWeight: theme.typography.fontWeights.medium,
   },

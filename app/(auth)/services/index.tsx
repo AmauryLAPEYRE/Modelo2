@@ -1,5 +1,4 @@
 // app/(auth)/services/index.tsx
-
 import React, { useState } from 'react';
 import { View, ScrollView, SafeAreaView, Text, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
@@ -59,6 +58,13 @@ export default function ServicesListScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header personnalisé avec bouton retour */}
+      <View style={styles.customHeader}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+        </TouchableOpacity>
+      </View>
+      
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Text style={styles.title}>{title}</Text>
@@ -162,6 +168,19 @@ const useStyles = createThemedStyles((theme) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
+  },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
+    paddingBottom: theme.spacing.xs,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
