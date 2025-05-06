@@ -1,6 +1,6 @@
 // app/(public)/register.tsx
 import React, { useState } from 'react';
-import { View, Text, SafeAreaView, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, SafeAreaView, Alert, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { Button } from '../../src/components/ui/Button';
 import { Input } from '../../src/components/ui/Input';
@@ -14,7 +14,7 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState<'model' | 'professional' | ''>('');
-  const [professionalType, setProfessionalType] = useState<'coiffeur' | 'maquilleur' | 'photographe' | 'estheticienne' | ''>('');
+  const [professionalType, setProfessionalType] = useState<'coiffeur' | 'maquilleur' | 'photographe' | 'estheticienne' | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const theme = useTheme();
@@ -105,7 +105,7 @@ export default function RegisterScreen() {
                     title="Modèle"
                     onPress={() => {
                       setRole('model');
-                      setProfessionalType(''); // Réinitialiser le type professionnel
+                      setProfessionalType(undefined); // Réinitialiser le type professionnel
                     }}
                     variant={role === 'model' ? 'primary' : 'outline'}
                     style={styles.roleButton}

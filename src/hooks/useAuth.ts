@@ -1,14 +1,25 @@
 // src/hooks/useAuth.ts
 import { useState, useEffect } from 'react';
-import { auth, db } from '../lib/firebase';
 import { 
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged,
+  UserCredential
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { User } from '../types/models';
+import { auth, db } from '../lib/firebase';
+
+// Types pour les utilisateurs
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: 'model' | 'professional';
+  professionalType?: 'coiffeur' | 'maquilleur' | 'photographe' | 'estheticienne';
+  createdAt: Date;
+  // autres champs...
+}
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -17,9 +28,21 @@ export const useAuth = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-        if (userDoc.exists()) {
-          setUser({ id: firebaseUser.uid, ...userDoc.data() } as User);
+        try {
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          
+          if (userDoc.exists()) {
+            setUser({
+              id: firebaseUser.uid,
+              ...userDoc.data() as Omit<User, 'id'>
+            });
+          } else {
+            setUser(null);
+            await signOut(auth);
+          }
+        } catch (error) {
+          console.error("Erreur lors de la récupération des données utilisateur:", error);
+          setUser(null);
         }
       } else {
         setUser(null);
@@ -30,88 +53,108 @@ export const useAuth = () => {
     return () => unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const result = await signInWithEmailAndPassword(auth, email, password);
-    return result.user;
-  };
-
+  // Fonction d'inscription
   const register = async (
-    email: string, 
-    password: string, 
-    name: string, 
-    role: 'model' | 'professional', 
-    professionalType?: 'coiffeur' | 'maquilleur' | 'photographe' | 'estheticienne',
-    professionalStatus?: 'freelance' | 'auto-entrepreneur' | 'société',
-    businessName?: string
-  ) => {
-    const result = await createUserWithEmailAndPassword(auth, email, password);
-    
-    // Données de base pour tous les utilisateurs
-    const userData: Omit<User, 'id'> = {
-      email,
-      name,
-      role,
-      createdAt: new Date(),
-    };
-
-    // Ajouter les champs spécifiques au rôle
-    if (role === 'professional') {
-      if (professionalType) {
+    email: string,
+    password: string,
+    name: string,
+    role: 'model' | 'professional',
+    professionalType?: 'coiffeur' | 'maquilleur' | 'photographe' | 'estheticienne'
+  ): Promise<UserCredential> => {
+    try {
+      // Vérifications de base
+      if (!email) throw new Error('Email manquant');
+      if (!password) throw new Error('Mot de passe manquant');
+      if (!name) throw new Error('Nom manquant');
+      if (!role) throw new Error('Rôle manquant');
+      if (role === 'professional' && !professionalType) {
+        throw new Error('Type professionnel manquant pour un compte professionnel');
+      }
+      
+      // Validation du mot de passe
+      if (password.length < 6) {
+        throw new Error('Le mot de passe doit contenir au moins 6 caractères');
+      }
+      
+      // Validation de l'email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        throw new Error('Format d\'email invalide');
+      }
+      
+      // Création de l'utilisateur dans Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Création du document utilisateur dans Firestore
+      const userData: Omit<User, 'id'> & { createdAt: Date } = {
+        email,
+        name,
+        role,
+        createdAt: new Date(),
+      };
+      
+      if (role === 'professional' && professionalType) {
         userData.professionalType = professionalType;
       }
-      if (professionalStatus) {
-        userData.professionalStatus = professionalStatus;
+      
+      await setDoc(doc(db, 'users', userCredential.user.uid), userData);
+      
+      return userCredential;
+    } catch (error: any) {
+      console.error("Erreur lors de l'inscription:", error);
+      
+      // Fournir des messages d'erreur plus spécifiques basés sur les codes d'erreur Firebase
+      if (error.code === 'auth/email-already-in-use') {
+        throw new Error('Cette adresse email est déjà utilisée');
+      } else if (error.code === 'auth/invalid-email') {
+        throw new Error('L\'adresse email est invalide');
+      } else if (error.code === 'auth/weak-password') {
+        throw new Error('Le mot de passe est trop faible');
+      } else if (error.code === 'auth/network-request-failed') {
+        throw new Error('Problème de connexion réseau. Vérifiez votre connexion internet.');
       }
-      if (businessName) {
-        userData.businessName = businessName;
-      }
-    } 
-    else if (role === 'model') {
-      // Initialiser la structure pour les modèles
-      userData.modelProfile = {
-        firstName: '',
-        lastName: '',
-        age: 0,
-        gender: 'homme',
-        height: 0,
-        eyeColor: '',
-        hairColor: '',
-        experience: '',
-        photos: {},
-        socialMedia: {},
-        availability: {
-          weekdays: Array(7).fill(false),
-          timeSlots: [],
-        },
-        location: {
-          city: '',
-          radius: 10,
-        },
-        interests: [],
-      };
-    }
-
-    // Enregistrer les données dans Firestore
-    await setDoc(doc(db, 'users', result.user.uid), userData);
-    return result.user;
-  };
-
-  const logout = async () => {
-    await signOut(auth);
-  };
-
-  // Fonction pour mettre à jour le profil utilisateur
-  const updateUserProfile = async (userId: string, data: Partial<User>) => {
-    if (!userId) throw new Error('ID utilisateur requis');
-    
-    const userRef = doc(db, 'users', userId);
-    await setDoc(userRef, data, { merge: true });
-    
-    // Mettre à jour l'état local si c'est l'utilisateur actuel
-    if (user && user.id === userId) {
-      setUser({ ...user, ...data });
+      
+      throw error;
     }
   };
 
-  return { user, loading, login, register, logout, updateUserProfile };
+  const login = async (email: string, password: string): Promise<UserCredential> => {
+    try {
+      if (!email) throw new Error('Email manquant');
+      if (!password) throw new Error('Mot de passe manquant');
+      
+      return await signInWithEmailAndPassword(auth, email, password);
+    } catch (error: any) {
+      console.error("Erreur lors de la connexion:", error);
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        throw new Error('Email ou mot de passe incorrect');
+      } else if (error.code === 'auth/invalid-email') {
+        throw new Error('Format d\'email invalide');
+      } else if (error.code === 'auth/user-disabled') {
+        throw new Error('Ce compte a été désactivé');
+      } else if (error.code === 'auth/too-many-requests') {
+        throw new Error('Trop de tentatives infructueuses. Veuillez réessayer plus tard');
+      }
+      
+      throw error;
+    }
+  };
+
+  // Fonction de déconnexion
+  const logout = async (): Promise<void> => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion:", error);
+      throw error;
+    }
+  };
+
+  return {
+    user,
+    loading,
+    register,
+    login,
+    logout
+  };
 };
